@@ -23,7 +23,7 @@ all =
         [ test "should not report when functions are type camelCase" <|
             \_ ->
                 """
-module A exposing (a)
+module A exposing (..)
 a : Int
 a = 1"""
                     |> Review.Test.run rule
@@ -31,10 +31,17 @@ a = 1"""
         , test "should report snake_case functions, and hint the camelCase name" <|
             \_ ->
                 """
-module A exposing (a)
+module A exposing (..)
 add_one n = n + 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
                         [ error "add_one" "addOne"
                         ]
+        , test "should ignore trailing underscores" <|
+            \_ ->
+                """
+module A exposing (..)
+addOne_ n = n + 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
         ]

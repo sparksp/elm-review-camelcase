@@ -1,0 +1,32 @@
+name: Elm Checks
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Add yarn bin to path
+        run: echo ::add-path::$(yarn bin)
+      - name: Run elm-test
+        run: elm-test
+      - name: Run elm-review
+        run: elm-review
+      - name: Run elm-format
+        uses: sparksp/elm-format-action@v1
+
+  elm-analyse:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: harehare/elm-analyse-action@v1

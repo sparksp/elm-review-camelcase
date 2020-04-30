@@ -38,7 +38,7 @@ a = 1"""
 testFunctionNames : Test
 testFunctionNames =
     describe "function names"
-        [ test "should not report when functions are type camelCase" <|
+        [ test "should not report when functions are camelCase" <|
             \_ ->
                 """
 module A exposing (..)
@@ -108,6 +108,100 @@ a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
                         [ importAliasError "Add_One" "AddOne" ]
+        ]
+
+
+testLetInNames : Test
+testLetInNames =
+    describe "let..in names"
+        [ test "should not report when names are camelCase" <|
+            \_ ->
+                """
+module A exposing (..)
+age =
+    let
+        { name, age } = person
+    in
+    age + 1
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should report when function names are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+age =
+    let
+        person_age = person.age
+        person_name = person.name
+    in
+    1
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ functionError "person_age" "personAge"
+                        , functionError "person_name" "personName"
+                        ]
+        , test "should report when record names are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+age =
+    let
+        { person_name, person_age } = person
+    in
+    1
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ constantError "person_name" "personName"
+                        , constantError "person_age" "personAge"
+                        ]
+        , test "should report when tuple names are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+age =
+    let
+        ( person_name, person_age ) = person.split
+    in
+    1
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ constantError "person_name" "personName"
+                        , constantError "person_age" "personAge"
+                        ]
+        , test "should report when uncons names are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+age =
+    let
+        person_age :: other_ages = ages
+    in
+    1
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ constantError "person_age" "personAge"
+                        , constantError "other_ages" "otherAges"
+                        ]
+        , test "should report when list names are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+age =
+    let
+        [ person_age, person_name ] = person
+    in
+    1
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ constantError "person_age" "personAge"
+                        , constantError "person_name" "personName"
+                        ]
         ]
 
 
@@ -219,6 +313,7 @@ all =
         [ testCustomTypeNames
         , testFunctionNames
         , testImportAliasNames
+        , testLetInNames
         , testModuleNames
         , testPortNames
         , testTypeAliasNames
@@ -227,6 +322,18 @@ all =
 
 
 --- HELPERS
+
+
+constantError : String -> String -> Review.Test.ExpectedError
+constantError snake_case camelCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` constant." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All constants must be named using the camelCase style.  For this constant that would be `", camelCase, "`." ]
+            ]
+        , under = snake_case
+        }
 
 
 functionError : String -> String -> Review.Test.ExpectedError

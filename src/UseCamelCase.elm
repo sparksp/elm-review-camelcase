@@ -7,11 +7,14 @@ module UseCamelCase exposing (rule)
 -}
 
 import Elm.Syntax.Declaration as Declaration exposing (Declaration)
+import Elm.Syntax.Expression as Expression exposing (Expression)
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.Module as Module exposing (Module)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
-import ReCase exposing (ReCase(..))
+import Elm.Syntax.Pattern as Pattern exposing (Pattern)
+import Elm.Syntax.Range exposing (Range)
+import ReCase exposing (ReCase)
 import Review.Rule as Rule exposing (Error, Rule)
 
 
@@ -22,6 +25,7 @@ rule =
         |> Rule.withSimpleModuleDefinitionVisitor moduleDefinitionVisitor
         |> Rule.withSimpleImportVisitor importVisitor
         |> Rule.withSimpleDeclarationVisitor declarationVisitor
+        |> Rule.withSimpleExpressionVisitor expressionVisitor
         |> Rule.fromModuleRuleSchema
 
 
@@ -58,8 +62,31 @@ declarationVisitor node =
             []
 
 
+expressionVisitor : Node Expression -> List (Error {})
+expressionVisitor node =
+    case Node.value node of
+        Expression.LetExpression { declarations } ->
+            List.concatMap checkLetDeclaration declarations
+
+        _ ->
+            []
+
+
 
 --- NODE HELPERS
+
+
+checkLetDeclaration : Node Expression.LetDeclaration -> List (Error {})
+checkLetDeclaration node =
+    case Node.value node of
+        Expression.LetDestructuring pattern _ ->
+            checkPattern pattern
+
+        Expression.LetFunction { declaration } ->
+            declaration
+                |> Node.value
+                |> .name
+                |> checkStringNode functionError ReCase.ToCamel
 
 
 checkModuleName : (Node ModuleName -> List String -> Error {}) -> Node ModuleName -> List (Error {})
@@ -80,6 +107,28 @@ checkModuleName makeError node =
         []
 
 
+checkPattern : Node Pattern -> List (Error {})
+checkPattern node =
+    case Node.value node of
+        Pattern.TuplePattern tuple ->
+            List.concatMap checkPattern tuple
+
+        Pattern.RecordPattern record ->
+            List.concatMap (checkStringNode varNodeError ReCase.ToCamel) record
+
+        Pattern.UnConsPattern leftPattern rightPattern ->
+            checkPattern leftPattern ++ checkPattern rightPattern
+
+        Pattern.ListPattern list ->
+            List.concatMap checkPattern list
+
+        Pattern.VarPattern name ->
+            checkVar (Node.range node) name
+
+        _ ->
+            []
+
+
 checkStringNode : (Node String -> String -> Error {}) -> ReCase -> Node String -> List (Error {})
 checkStringNode makeError toCase node =
     let
@@ -93,6 +142,20 @@ checkStringNode makeError toCase node =
     in
     if name /= reCaseName then
         [ makeError node reCaseName ]
+
+    else
+        []
+
+
+checkVar : Range -> String -> List (Error {})
+checkVar range name =
+    let
+        camelCaseName : String
+        camelCaseName =
+            ReCase.recase ReCase.ToCamel name
+    in
+    if name /= camelCaseName then
+        [ varError range name camelCaseName ]
 
     else
         []
@@ -173,3 +236,20 @@ typeError name pascalCase =
             ]
         }
         (Node.range name)
+
+
+varNodeError : Node String -> String -> Error {}
+varNodeError node camelCase =
+    varError (Node.range node) (Node.value node) camelCase
+
+
+varError : Range -> String -> String -> Error {}
+varError range name camelCase =
+    Rule.error
+        { message = String.concat [ "Wrong case style for `", name, "` constant." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All constants must be named using the camelCase style.  For this constant that would be `", camelCase, "`." ]
+            ]
+        }
+        range

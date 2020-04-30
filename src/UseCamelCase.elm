@@ -43,24 +43,10 @@ declarationVisitor : Node Declaration -> List (Error {})
 declarationVisitor node =
     case Node.value node of
         Declaration.FunctionDeclaration { declaration } ->
-            let
-                name : Node String
-                name =
-                    declaration
-                        |> Node.value
-                        |> .name
+            checkStringNode functionError (declaration |> Node.value |> .name)
 
-                camelCaseName : String
-                camelCaseName =
-                    Node.value name
-                        |> ReCase.recase ReCase.ToCamel
-            in
-            if Node.value name /= camelCaseName then
-                [ functionError name camelCaseName
-                ]
-
-            else
-                []
+        Declaration.PortDeclaration { name } ->
+            checkStringNode portError name
 
         _ ->
             []
@@ -83,6 +69,24 @@ checkModuleName makeError node =
     in
     if List.any identity <| List.map2 (/=) name pascalCaseName then
         [ makeError node pascalCaseName ]
+
+    else
+        []
+
+
+checkStringNode : (Node String -> String -> Error {}) -> Node String -> List (Error {})
+checkStringNode makeError node =
+    let
+        name : String
+        name =
+            Node.value node
+
+        camelCaseName : String
+        camelCaseName =
+            ReCase.recase ReCase.ToCamel name
+    in
+    if name /= camelCaseName then
+        [ makeError node camelCaseName ]
 
     else
         []
@@ -139,3 +143,15 @@ moduleError moduleName pascalCase =
             ]
         }
         (Node.range moduleName)
+
+
+portError : Node String -> String -> Error {}
+portError name camelCase =
+    Rule.error
+        { message = String.concat [ "Wrong case style for `", Node.value name, "` port." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All ports must be named using the camelCase style.  For this port that would be `", camelCase, "`." ]
+            ]
+        }
+        (Node.range name)

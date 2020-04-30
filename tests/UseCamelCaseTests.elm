@@ -118,10 +118,37 @@ a = 1"""
         ]
 
 
+testPortNames : Test
+testPortNames =
+    describe "port names"
+        [ test "should not report when port names are camelCase" <|
+            \_ ->
+                """
+port module Ports exposing (..)
+port sendData : String -> Cmd msg
+port recvData : (String -> msg) -> Sub msg
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should report when port names are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+port module Ports exposing (..)
+port send_data : String -> Cmd msg
+port recv_data : (String -> msg) -> Sub msg
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ portError "send_data" "sendData"
+                        , portError "recv_data" "recvData"
+                        ]
+        ]
+
+
 all : Test
 all =
     describe "UseCamelCase"
-        [ testFunctionNames, testImportAliasNames, testModuleNames ]
+        [ testFunctionNames, testImportAliasNames, testModuleNames, testPortNames ]
 
 
 
@@ -159,6 +186,18 @@ moduleError snake_case pascalCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All modules must be named using the PascalCase style.  For this module that would be `", pascalCase, "`." ]
+            ]
+        , under = snake_case
+        }
+
+
+portError : String -> String -> Review.Test.ExpectedError
+portError snake_case camelCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` port." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All ports must be named using the camelCase style.  For this port that would be `", camelCase, "`." ]
             ]
         , under = snake_case
         }

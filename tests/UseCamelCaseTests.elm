@@ -34,6 +34,53 @@ addOne_ n = n + 1"""
         ]
 
 
+testImportAliasNames : Test
+testImportAliasNames =
+    describe "import aliases"
+        [ test "should not report when imports are not aliased" <|
+            \_ ->
+                """
+module A exposing (..)
+import B
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should not report when imports have PascalCase names" <|
+            \_ ->
+                """
+module A exposing (..)
+import Maths.AddOne as AddOne
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should not report when imported module is not PascalCase" <|
+            \_ ->
+                """
+module A exposing (..)
+import Maths.Add_One
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should not report when imported module is not PascalCase but the alias is" <|
+            \_ ->
+                """
+module A exposing (..)
+import Maths.Add_One as AddOne
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should report when import name is not PascalCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+import Maths.AddOne as Add_One
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ importAliasError "Add_One" "AddOne" ]
+        ]
+
+
 testModuleNames : Test
 testModuleNames =
     describe "module names"
@@ -74,7 +121,7 @@ a = 1"""
 all : Test
 all =
     describe "UseCamelCase"
-        [ testFunctionNames, testModuleNames ]
+        [ testFunctionNames, testImportAliasNames, testModuleNames ]
 
 
 
@@ -88,6 +135,18 @@ functionError snake_case camelCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All functions must be named using the camelCase style.  For this function that would be `", camelCase, "`." ]
+            ]
+        , under = snake_case
+        }
+
+
+importAliasError : String -> String -> Review.Test.ExpectedError
+importAliasError snake_case pascalCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` import." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All modules must be named using the PascalCase style.  For this import that would be `", pascalCase, "`." ]
             ]
         , under = snake_case
         }

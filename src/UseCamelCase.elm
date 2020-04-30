@@ -7,6 +7,7 @@ module UseCamelCase exposing (rule)
 -}
 
 import Elm.Syntax.Declaration as Declaration exposing (Declaration)
+import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.Module as Module exposing (Module)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
@@ -19,31 +20,23 @@ rule : Rule
 rule =
     Rule.newModuleRuleSchema "UseCamelCase" ()
         |> Rule.withSimpleModuleDefinitionVisitor moduleDefinitionVisitor
+        |> Rule.withSimpleImportVisitor importVisitor
         |> Rule.withSimpleDeclarationVisitor declarationVisitor
         |> Rule.fromModuleRuleSchema
 
 
 moduleDefinitionVisitor : Node Module -> List (Error {})
 moduleDefinitionVisitor node =
-    let
-        moduleName : Node ModuleName
-        moduleName =
-            moduleNameNode node
+    checkModuleName moduleError (moduleNameNode node)
 
-        name : List String
-        name =
-            Node.value moduleName
 
-        pascalCaseName : List String
-        pascalCaseName =
-            List.map (ReCase.recase ReCase.ToPascal) name
-    in
-    if List.any identity <| List.map2 (/=) name pascalCaseName then
-        [ moduleError moduleName pascalCaseName
-        ]
-
-    else
-        []
+importVisitor : Node Import -> List (Error {})
+importVisitor node =
+    node
+        |> Node.value
+        |> .moduleAlias
+        |> Maybe.map (checkModuleName importAliasError)
+        |> Maybe.withDefault []
 
 
 declarationVisitor : Node Declaration -> List (Error {})
@@ -77,6 +70,24 @@ declarationVisitor node =
 --- NODE HELPERS
 
 
+checkModuleName : (Node ModuleName -> List String -> Error {}) -> Node ModuleName -> List (Error {})
+checkModuleName makeError node =
+    let
+        name : List String
+        name =
+            Node.value node
+
+        pascalCaseName : List String
+        pascalCaseName =
+            List.map (ReCase.recase ReCase.ToPascal) name
+    in
+    if List.any identity <| List.map2 (/=) name pascalCaseName then
+        [ makeError node pascalCaseName ]
+
+    else
+        []
+
+
 moduleNameNode : Node Module -> Node ModuleName
 moduleNameNode node =
     case Node.value node of
@@ -104,6 +115,18 @@ functionError name camelCase =
             ]
         }
         (Node.range name)
+
+
+importAliasError : Node ModuleName -> List String -> Error {}
+importAliasError moduleName pascalCase =
+    Rule.error
+        { message = String.concat [ "Wrong case style for `", String.join "." (Node.value moduleName), "` import." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All modules must be named using the PascalCase style.  For this import that would be `", String.join "." pascalCase, "`." ]
+            ]
+        }
+        (Node.range moduleName)
 
 
 moduleError : Node ModuleName -> List String -> Error {}

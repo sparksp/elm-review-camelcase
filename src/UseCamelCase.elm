@@ -42,11 +42,17 @@ importVisitor node =
 declarationVisitor : Node Declaration -> List (Error {})
 declarationVisitor node =
     case Node.value node of
+        Declaration.AliasDeclaration { name } ->
+            checkStringNode typeError ReCase.ToPascal name
+
+        Declaration.CustomTypeDeclaration { name } ->
+            checkStringNode typeError ReCase.ToPascal name
+
         Declaration.FunctionDeclaration { declaration } ->
-            checkStringNode functionError (declaration |> Node.value |> .name)
+            checkStringNode functionError ReCase.ToCamel (declaration |> Node.value |> .name)
 
         Declaration.PortDeclaration { name } ->
-            checkStringNode portError name
+            checkStringNode portError ReCase.ToCamel name
 
         _ ->
             []
@@ -74,19 +80,19 @@ checkModuleName makeError node =
         []
 
 
-checkStringNode : (Node String -> String -> Error {}) -> Node String -> List (Error {})
-checkStringNode makeError node =
+checkStringNode : (Node String -> String -> Error {}) -> ReCase -> Node String -> List (Error {})
+checkStringNode makeError toCase node =
     let
         name : String
         name =
             Node.value node
 
-        camelCaseName : String
-        camelCaseName =
-            ReCase.recase ReCase.ToCamel name
+        reCaseName : String
+        reCaseName =
+            ReCase.recase toCase name
     in
-    if name /= camelCaseName then
-        [ makeError node camelCaseName ]
+    if name /= reCaseName then
+        [ makeError node reCaseName ]
 
     else
         []
@@ -152,6 +158,18 @@ portError name camelCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All ports must be named using the camelCase style.  For this port that would be `", camelCase, "`." ]
+            ]
+        }
+        (Node.range name)
+
+
+typeError : Node String -> String -> Error {}
+typeError name pascalCase =
+    Rule.error
+        { message = String.concat [ "Wrong case style for `", Node.value name, "` type." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All types must be named using the PascalCase style.  For this type that would be `", pascalCase, "`." ]
             ]
         }
         (Node.range name)

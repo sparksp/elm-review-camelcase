@@ -5,6 +5,36 @@ import Test exposing (Test, describe, test)
 import UseCamelCase exposing (rule)
 
 
+testCustomTypeNames : Test
+testCustomTypeNames =
+    describe "custom type names"
+        [ test "should not report when custom types are PascalCase" <|
+            \_ ->
+                """
+module Math.Special exposing (..)
+type IntegerNumber = Whole Int
+type SmallInteger = Small Int
+type Floater = Float Int Int
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should report when custom types are not PascalCase and hint the correct name" <|
+            \_ ->
+                """
+module Math.Special exposing (..)
+type Integer_Number = Whole Int
+type SMALL_INTEGER = Small Int
+type FLOATER = Float Int Int
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ typeNameError "Integer_Number" "IntegerNumber"
+                        , typeNameError "SMALL_INTEGER" "SmallInteger"
+                        , typeNameError "FLOATER" "Floater"
+                        ]
+        ]
+
+
 testFunctionNames : Test
 testFunctionNames =
     describe "function names"
@@ -91,7 +121,7 @@ module AddOne exposing (..)
 a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectNoErrors
-        , test "should report when modules are not PascalCase and hint the correct name" <|
+        , test "should report when module names include _ and hint the PascalCase name" <|
             \_ ->
                 """
 module Add_One exposing (..)
@@ -99,6 +129,14 @@ a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
                         [ moduleError "Add_One" "AddOne" ]
+        , test "should report when modules are all CAPITALS and hint the PascalCase name" <|
+            \_ ->
+                """
+module HTML exposing (..)
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ moduleError "HTML" "Html" ]
         , test "should report when parent module is not PascalCase and hint the correct name" <|
             \_ ->
                 """
@@ -145,10 +183,46 @@ a = 1"""
         ]
 
 
+testTypeAliasNames : Test
+testTypeAliasNames =
+    describe "type alias names"
+        [ test "should not report when type alias names are PascalCase" <|
+            \_ ->
+                """
+module User exposing (..)
+type alias UserName = String
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should report when type alias names are not PascalCase and hint the correct name" <|
+            \_ ->
+                """
+module User exposing (..)
+type alias User_Name = String
+type alias User_email = String
+type alias USER_PHONE = String
+type alias USERNAME = String
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ typeNameError "User_Name" "UserName"
+                        , typeNameError "User_email" "UserEmail"
+                        , typeNameError "USER_PHONE" "UserPhone"
+                        , typeNameError "USERNAME" "Username"
+                        ]
+        ]
+
+
 all : Test
 all =
     describe "UseCamelCase"
-        [ testFunctionNames, testImportAliasNames, testModuleNames, testPortNames ]
+        [ testCustomTypeNames
+        , testFunctionNames
+        , testImportAliasNames
+        , testModuleNames
+        , testPortNames
+        , testTypeAliasNames
+        ]
 
 
 
@@ -198,6 +272,18 @@ portError snake_case camelCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All ports must be named using the camelCase style.  For this port that would be `", camelCase, "`." ]
+            ]
+        , under = snake_case
+        }
+
+
+typeNameError : String -> String -> Review.Test.ExpectedError
+typeNameError snake_case pascalCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` type." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All types must be named using the PascalCase style.  For this type that would be `", pascalCase, "`." ]
             ]
         , under = snake_case
         }

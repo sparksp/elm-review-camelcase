@@ -57,10 +57,8 @@ declarationVisitor node =
                 ++ List.concatMap (checkStringNode genericError ReCase.toCamel) generics
                 ++ List.concatMap checkValueConstructor constructors
 
-        Declaration.FunctionDeclaration { declaration, signature } ->
-            checkStringNode functionError ReCase.toCamel (declaration |> Node.value |> .name)
-                ++ List.concatMap (checkPattern argumentError) (declaration |> Node.value |> .arguments)
-                ++ checkMaybeSignature signature
+        Declaration.FunctionDeclaration function ->
+            checkFunction function
 
         Declaration.PortDeclaration { name } ->
             checkStringNode portError ReCase.toCamel name
@@ -144,11 +142,15 @@ checkLetDeclaration node =
         Expression.LetDestructuring pattern _ ->
             checkPattern variableError pattern
 
-        Expression.LetFunction { declaration } ->
-            declaration
-                |> Node.value
-                |> .name
-                |> checkStringNode functionError ReCase.toCamel
+        Expression.LetFunction function ->
+            checkFunction function
+
+
+checkFunction : Expression.Function -> List (Error {})
+checkFunction { declaration, signature } =
+    checkStringNode functionError ReCase.toCamel (declaration |> Node.value |> .name)
+        ++ List.concatMap (checkPattern argumentError) (declaration |> Node.value |> .arguments)
+        ++ checkMaybeSignature signature
 
 
 checkModuleName : (Node ModuleName -> List String -> Error {}) -> Node ModuleName -> List (Error {})

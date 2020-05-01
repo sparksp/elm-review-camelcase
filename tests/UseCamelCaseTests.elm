@@ -387,6 +387,22 @@ age =
                         [ variableError "person_age" "personAge"
                         , variableError "person_name" "personName"
                         ]
+        , test "should report when function signatures are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+age =
+    let
+        calc : any_type -> Int
+        calc some_thing = 1
+    in
+    1
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ genericError "any_type" "anyType"
+                        , argumentError "some_thing" "someThing"
+                        ]
         ]
 
 

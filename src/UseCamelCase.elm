@@ -172,6 +172,27 @@ checkModuleName makeError node =
 checkPattern : (Node String -> String -> Error {}) -> Node Pattern -> List (Error {})
 checkPattern toError node =
     case Node.value node of
+        Pattern.AllPattern ->
+            []
+
+        Pattern.UnitPattern ->
+            []
+
+        Pattern.CharPattern _ ->
+            []
+
+        Pattern.StringPattern _ ->
+            []
+
+        Pattern.IntPattern _ ->
+            []
+
+        Pattern.HexPattern _ ->
+            []
+
+        Pattern.FloatPattern _ ->
+            []
+
         Pattern.TuplePattern tuple ->
             List.concatMap (checkPattern toError) tuple
 
@@ -197,9 +218,6 @@ checkPattern toError node =
 
         Pattern.ParenthesizedPattern subPattern ->
             checkPattern toError subPattern
-
-        _ ->
-            []
 
 
 checkStringNode : (Node String -> String -> Error {}) -> (String -> String) -> Node String -> List (Error {})

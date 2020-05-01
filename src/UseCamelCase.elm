@@ -73,12 +73,20 @@ expressionVisitor node =
         Expression.LetExpression { declarations } ->
             List.concatMap checkLetDeclaration declarations
 
+        Expression.CaseExpression { cases } ->
+            List.concatMap checkCase cases
+
         _ ->
             []
 
 
 
 --- NODE HELPERS
+
+
+checkCase : Expression.Case -> List (Error {})
+checkCase =
+    checkPattern variableError << Tuple.first
 
 
 checkMaybeSignature : Maybe (Node Signature) -> List (Error {})

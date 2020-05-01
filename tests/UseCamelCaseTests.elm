@@ -5,6 +5,25 @@ import Test exposing (Test, describe, test)
 import UseCamelCase exposing (rule)
 
 
+testCaseStatements : Test
+testCaseStatements =
+    describe "case statements"
+        [ test "should report when case is not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+a =
+    case foo of
+        Some any_value ->
+            1
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ variableError "any_value" "anyValue"
+                        ]
+        ]
+
+
 testCustomTypeNames : Test
 testCustomTypeNames =
     describe "custom type names"
@@ -560,7 +579,8 @@ a = 1"""
 all : Test
 all =
     describe "UseCamelCase"
-        [ testCustomTypeNames
+        [ testCaseStatements
+        , testCustomTypeNames
         , testCustomTypeVariants
         , testFunctionArgumentNames
         , testFunctionNames

@@ -13,6 +13,7 @@ import Elm.Syntax.Module as Module exposing (Module)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
 import Elm.Syntax.Pattern as Pattern exposing (Pattern)
+import Elm.Syntax.Signature exposing (Signature)
 import Elm.Syntax.Type as Type
 import Elm.Syntax.TypeAnnotation as TypeAnnotation exposing (TypeAnnotation)
 import ReCase
@@ -56,9 +57,10 @@ declarationVisitor node =
                 ++ List.concatMap (checkStringNode genericError ReCase.toCamel) generics
                 ++ List.concatMap checkValueConstructor constructors
 
-        Declaration.FunctionDeclaration { declaration } ->
+        Declaration.FunctionDeclaration { declaration, signature } ->
             checkStringNode functionError ReCase.toCamel (declaration |> Node.value |> .name)
                 ++ List.concatMap (checkPattern argumentError) (declaration |> Node.value |> .arguments)
+                ++ checkMaybeSignature signature
 
         Declaration.PortDeclaration { name } ->
             checkStringNode portError ReCase.toCamel name
@@ -81,6 +83,18 @@ expressionVisitor node =
 --- NODE HELPERS
 
 
+checkMaybeSignature : Maybe (Node Signature) -> List (Error {})
+checkMaybeSignature maybeNode =
+    maybeNode
+        |> Maybe.map checkSignature
+        |> Maybe.withDefault []
+
+
+checkSignature : Node Signature -> List (Error {})
+checkSignature node =
+    checkTypeAnnotation (node |> Node.value |> .typeAnnotation)
+
+
 checkValueConstructor : Node Type.ValueConstructor -> List (Error {})
 checkValueConstructor node =
     checkStringNode typeVariantError ReCase.toPascal (node |> Node.value |> .name)
@@ -90,11 +104,28 @@ checkValueConstructor node =
 checkTypeAnnotation : Node TypeAnnotation -> List (Error {})
 checkTypeAnnotation node =
     case Node.value node of
+        TypeAnnotation.GenericType name ->
+            checkStringNode genericError ReCase.toCamel (Node.map (\_ -> name) node)
+
+        TypeAnnotation.Typed _ list ->
+            List.concatMap checkTypeAnnotation list
+
+        TypeAnnotation.Unit ->
+            []
+
+        TypeAnnotation.Tupled list ->
+            List.concatMap checkTypeAnnotation list
+
         TypeAnnotation.Record recordFields ->
             List.concatMap checkRecordField recordFields
 
-        _ ->
-            []
+        TypeAnnotation.GenericRecord name recordFields ->
+            checkStringNode genericError ReCase.toCamel name
+                ++ List.concatMap checkRecordField (Node.value recordFields)
+
+        TypeAnnotation.FunctionTypeAnnotation first second ->
+            checkTypeAnnotation first
+                ++ checkTypeAnnotation second
 
 
 checkRecordField : Node TypeAnnotation.RecordField -> List (Error {})

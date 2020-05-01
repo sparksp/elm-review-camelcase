@@ -178,6 +178,77 @@ addOne_ n = n + 1"""
         ]
 
 
+testFunctionSignatures : Test
+testFunctionSignatures =
+    describe "function signatures"
+        [ test "should not report when signatures are camelCase" <|
+            \_ ->
+                """
+module A exposing (..)
+a : { firstName : String } -> { a | className : String } -> String
+a = ""
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should report when records are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+a : { first_name : String, class_name : String } -> String
+a = ""
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ recordKeyError "first_name" "firstName"
+                        , recordKeyError "class_name" "className"
+                        ]
+        , test "should report when generic records are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+a : { any_record | first_name : String, class_name : String } -> String
+a = ""
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ genericError "any_record" "anyRecord"
+                        , recordKeyError "first_name" "firstName"
+                        , recordKeyError "class_name" "className"
+                        ]
+        , test "should report when generic types are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+a : any_value -> Int
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ genericError "any_value" "anyValue"
+                        ]
+        , test "should report errors within nested types and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+a : Maybe (any_value -> Int) -> Int
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ genericError "any_value" "anyValue"
+                        ]
+        , test "should report errors within tuples and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+a : ( any_value, { first_name : String } ) -> Int
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ genericError "any_value" "anyValue"
+                        , recordKeyError "first_name" "firstName"
+                        ]
+        ]
+
+
 testImportAliasNames : Test
 testImportAliasNames =
     describe "import aliases"
@@ -477,6 +548,7 @@ all =
         , testCustomTypeVariants
         , testFunctionArgumentNames
         , testFunctionNames
+        , testFunctionSignatures
         , testImportAliasNames
         , testLetInNames
         , testModuleNames

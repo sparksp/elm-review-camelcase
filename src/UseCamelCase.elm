@@ -14,7 +14,7 @@ import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
 import Elm.Syntax.Pattern as Pattern exposing (Pattern)
 import Elm.Syntax.Range exposing (Range)
-import ReCase exposing (ReCase)
+import ReCase
 import Review.Rule as Rule exposing (Error, Rule)
 
 
@@ -47,16 +47,16 @@ declarationVisitor : Node Declaration -> List (Error {})
 declarationVisitor node =
     case Node.value node of
         Declaration.AliasDeclaration { name } ->
-            checkStringNode typeError ReCase.ToPascal name
+            checkStringNode typeError ReCase.toPascal name
 
         Declaration.CustomTypeDeclaration { name } ->
-            checkStringNode typeError ReCase.ToPascal name
+            checkStringNode typeError ReCase.toPascal name
 
         Declaration.FunctionDeclaration { declaration } ->
-            checkStringNode functionError ReCase.ToCamel (declaration |> Node.value |> .name)
+            checkStringNode functionError ReCase.toCamel (declaration |> Node.value |> .name)
 
         Declaration.PortDeclaration { name } ->
-            checkStringNode portError ReCase.ToCamel name
+            checkStringNode portError ReCase.toCamel name
 
         _ ->
             []
@@ -86,7 +86,7 @@ checkLetDeclaration node =
             declaration
                 |> Node.value
                 |> .name
-                |> checkStringNode functionError ReCase.ToCamel
+                |> checkStringNode functionError ReCase.toCamel
 
 
 checkModuleName : (Node ModuleName -> List String -> Error {}) -> Node ModuleName -> List (Error {})
@@ -98,7 +98,7 @@ checkModuleName makeError node =
 
         pascalCaseName : List String
         pascalCaseName =
-            List.map (ReCase.recase ReCase.ToPascal) name
+            List.map ReCase.toPascal name
     in
     if List.any identity <| List.map2 (/=) name pascalCaseName then
         [ makeError node pascalCaseName ]
@@ -114,7 +114,7 @@ checkPattern node =
             List.concatMap checkPattern tuple
 
         Pattern.RecordPattern record ->
-            List.concatMap (checkStringNode varNodeError ReCase.ToCamel) record
+            List.concatMap (checkStringNode varNodeError ReCase.toCamel) record
 
         Pattern.UnConsPattern leftPattern rightPattern ->
             checkPattern leftPattern ++ checkPattern rightPattern
@@ -129,7 +129,7 @@ checkPattern node =
             []
 
 
-checkStringNode : (Node String -> String -> Error {}) -> ReCase -> Node String -> List (Error {})
+checkStringNode : (Node String -> String -> Error {}) -> (String -> String) -> Node String -> List (Error {})
 checkStringNode makeError toCase node =
     let
         name : String
@@ -138,7 +138,7 @@ checkStringNode makeError toCase node =
 
         reCaseName : String
         reCaseName =
-            ReCase.recase toCase name
+            toCase name
     in
     if name /= reCaseName then
         [ makeError node reCaseName ]
@@ -152,7 +152,7 @@ checkVar range name =
     let
         camelCaseName : String
         camelCaseName =
-            ReCase.recase ReCase.ToCamel name
+            ReCase.toCamel name
     in
     if name /= camelCaseName then
         [ varError range name camelCaseName ]

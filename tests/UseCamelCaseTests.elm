@@ -222,8 +222,8 @@ age =
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
-                        [ constantError "person_name" "personName"
-                        , constantError "person_age" "personAge"
+                        [ variableError "person_name" "personName"
+                        , variableError "person_age" "personAge"
                         ]
         , test "should report when tuple names are not camelCase and hint the correct name" <|
             \_ ->
@@ -237,8 +237,8 @@ age =
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
-                        [ constantError "person_name" "personName"
-                        , constantError "person_age" "personAge"
+                        [ variableError "person_name" "personName"
+                        , variableError "person_age" "personAge"
                         ]
         , test "should report when uncons names are not camelCase and hint the correct name" <|
             \_ ->
@@ -252,8 +252,8 @@ age =
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
-                        [ constantError "person_age" "personAge"
-                        , constantError "other_ages" "otherAges"
+                        [ variableError "person_age" "personAge"
+                        , variableError "other_ages" "otherAges"
                         ]
         , test "should report when list names are not camelCase and hint the correct name" <|
             \_ ->
@@ -267,8 +267,8 @@ age =
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
-                        [ constantError "person_age" "personAge"
-                        , constantError "person_name" "personName"
+                        [ variableError "person_age" "personAge"
+                        , variableError "person_name" "personName"
                         ]
         ]
 
@@ -467,18 +467,6 @@ argumentError snake_case camelCase =
         }
 
 
-constantError : String -> String -> Review.Test.ExpectedError
-constantError snake_case camelCase =
-    Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` constant." ]
-        , details =
-            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All constants must be named using the camelCase style.  For this constant that would be `", camelCase, "`." ]
-            ]
-        , under = snake_case
-        }
-
-
 functionError : String -> String -> Review.Test.ExpectedError
 functionError snake_case camelCase =
     Review.Test.error
@@ -546,6 +534,18 @@ typeNameError snake_case pascalCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All types must be named using the PascalCase style.  For this type that would be `", pascalCase, "`." ]
+            ]
+        , under = snake_case
+        }
+
+
+variableError : String -> String -> Review.Test.ExpectedError
+variableError snake_case camelCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` variable." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All variables must be named using the camelCase style.  For this variable that would be `", camelCase, "`." ]
             ]
         , under = snake_case
         }

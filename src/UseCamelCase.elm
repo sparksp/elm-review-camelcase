@@ -314,10 +314,10 @@ typeError name pascalCase =
 variableError : Node String -> String -> Error {}
 variableError name camelCase =
     Rule.error
-        { message = String.concat [ "Wrong case style for `", Node.value name, "` constant." ]
+        { message = String.concat [ "Wrong case style for `", Node.value name, "` variable." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All constants must be named using the camelCase style.  For this constant that would be `", camelCase, "`." ]
+            , String.concat [ "All variables must be named using the camelCase style.  For this variable that would be `", camelCase, "`." ]
             ]
         }
         (Node.range name)

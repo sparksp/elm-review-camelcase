@@ -277,6 +277,55 @@ a = 1"""
         ]
 
 
+testRecordKeysInTypeAliases : Test
+testRecordKeysInTypeAliases =
+    describe "record keys in type aliases"
+        [ test "should not report when keys are camelCase" <|
+            \_ ->
+                """
+module User exposing (..)
+type alias User =
+    { dateOfBirth : String
+    , companyName : String
+    }
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should report when keys are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module User exposing (..)
+type alias User =
+    { date_of_birth : String
+    , company_name : String
+    }
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ recordKeyError "date_of_birth" "dateOfBirth"
+                        , recordKeyError "company_name" "companyName"
+                        ]
+        , test "should report when nested keys are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module User exposing (..)
+type alias User =
+    { address :
+        { address_line_1 : String
+        , address_line_2 : String
+        , postal_code : String
+        }
+    }
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ recordKeyError "address_line_1" "addressLine1"
+                        , recordKeyError "address_line_2" "addressLine2"
+                        , recordKeyError "postal_code" "postalCode"
+                        ]
+        ]
+
+
 testTypeAliasNames : Test
 testTypeAliasNames =
     describe "type alias names"
@@ -316,6 +365,7 @@ all =
         , testLetInNames
         , testModuleNames
         , testPortNames
+        , testRecordKeysInTypeAliases
         , testTypeAliasNames
         ]
 
@@ -379,6 +429,18 @@ portError snake_case camelCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All ports must be named using the camelCase style.  For this port that would be `", camelCase, "`." ]
+            ]
+        , under = snake_case
+        }
+
+
+recordKeyError : String -> String -> Review.Test.ExpectedError
+recordKeyError snake_case camelCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` key." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All keys must be named using the camelCase style.  For this key that would be `", camelCase, "`." ]
             ]
         , under = snake_case
         }

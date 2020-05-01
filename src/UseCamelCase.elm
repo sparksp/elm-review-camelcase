@@ -14,6 +14,7 @@ import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
 import Elm.Syntax.Pattern as Pattern exposing (Pattern)
 import Elm.Syntax.Range exposing (Range)
+import Elm.Syntax.TypeAnnotation as TypeAnnotation exposing (TypeAnnotation)
 import ReCase
 import Review.Rule as Rule exposing (Error, Rule)
 
@@ -46,8 +47,9 @@ importVisitor node =
 declarationVisitor : Node Declaration -> List (Error {})
 declarationVisitor node =
     case Node.value node of
-        Declaration.AliasDeclaration { name } ->
+        Declaration.AliasDeclaration { name, typeAnnotation } ->
             checkStringNode typeError ReCase.toPascal name
+                ++ checkTypeAnnotation typeAnnotation
 
         Declaration.CustomTypeDeclaration { name } ->
             checkStringNode typeError ReCase.toPascal name
@@ -74,6 +76,26 @@ expressionVisitor node =
 
 
 --- NODE HELPERS
+
+
+checkTypeAnnotation : Node TypeAnnotation -> List (Error {})
+checkTypeAnnotation node =
+    case Node.value node of
+        TypeAnnotation.Record recordFields ->
+            List.concatMap checkRecordField recordFields
+
+        _ ->
+            []
+
+
+checkRecordField : Node TypeAnnotation.RecordField -> List (Error {})
+checkRecordField node =
+    let
+        ( name, typeAnnotation ) =
+            Node.value node
+    in
+    checkStringNode recordKeyError ReCase.toCamel name
+        ++ checkTypeAnnotation typeAnnotation
 
 
 checkLetDeclaration : Node Expression.LetDeclaration -> List (Error {})
@@ -221,6 +243,18 @@ portError name camelCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All ports must be named using the camelCase style.  For this port that would be `", camelCase, "`." ]
+            ]
+        }
+        (Node.range name)
+
+
+recordKeyError : Node String -> String -> Error {}
+recordKeyError name camelCase =
+    Rule.error
+        { message = String.concat [ "Wrong case style for `", Node.value name, "` key." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All keys must be named using the camelCase style.  For this key that would be `", camelCase, "`." ]
             ]
         }
         (Node.range name)

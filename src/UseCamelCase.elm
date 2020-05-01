@@ -13,7 +13,6 @@ import Elm.Syntax.Module as Module exposing (Module)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
 import Elm.Syntax.Pattern as Pattern exposing (Pattern)
-import Elm.Syntax.Range exposing (Range)
 import Elm.Syntax.TypeAnnotation as TypeAnnotation exposing (TypeAnnotation)
 import ReCase
 import Review.Rule as Rule exposing (Error, Rule)
@@ -56,6 +55,7 @@ declarationVisitor node =
 
         Declaration.FunctionDeclaration { declaration } ->
             checkStringNode functionError ReCase.toCamel (declaration |> Node.value |> .name)
+                ++ List.concatMap (checkPattern argumentError) (declaration |> Node.value |> .arguments)
 
         Declaration.PortDeclaration { name } ->
             checkStringNode portError ReCase.toCamel name
@@ -102,7 +102,7 @@ checkLetDeclaration : Node Expression.LetDeclaration -> List (Error {})
 checkLetDeclaration node =
     case Node.value node of
         Expression.LetDestructuring pattern _ ->
-            checkPattern pattern
+            checkPattern variableError pattern
 
         Expression.LetFunction { declaration } ->
             declaration
@@ -129,23 +129,34 @@ checkModuleName makeError node =
         []
 
 
-checkPattern : Node Pattern -> List (Error {})
-checkPattern node =
+checkPattern : (Node String -> String -> Error {}) -> Node Pattern -> List (Error {})
+checkPattern toError node =
     case Node.value node of
         Pattern.TuplePattern tuple ->
-            List.concatMap checkPattern tuple
+            List.concatMap (checkPattern toError) tuple
 
         Pattern.RecordPattern record ->
-            List.concatMap (checkStringNode varNodeError ReCase.toCamel) record
+            List.concatMap (checkStringNode toError ReCase.toCamel) record
 
         Pattern.UnConsPattern leftPattern rightPattern ->
-            checkPattern leftPattern ++ checkPattern rightPattern
+            checkPattern toError leftPattern ++ checkPattern toError rightPattern
 
         Pattern.ListPattern list ->
-            List.concatMap checkPattern list
+            List.concatMap (checkPattern toError) list
 
         Pattern.VarPattern name ->
-            checkVar (Node.range node) name
+            Node.map (\_ -> name) node
+                |> checkVar toError
+
+        Pattern.AsPattern subPattern asName ->
+            checkStringNode aliasError ReCase.toCamel asName
+                ++ checkPattern toError subPattern
+
+        Pattern.NamedPattern _ list ->
+            List.concatMap (checkPattern toError) list
+
+        Pattern.ParenthesizedPattern subPattern ->
+            checkPattern toError subPattern
 
         _ ->
             []
@@ -169,15 +180,19 @@ checkStringNode makeError toCase node =
         []
 
 
-checkVar : Range -> String -> List (Error {})
-checkVar range name =
+checkVar : (Node String -> String -> Error {}) -> Node String -> List (Error {})
+checkVar makeError node =
     let
+        name : String
+        name =
+            Node.value node
+
         camelCaseName : String
         camelCaseName =
             ReCase.toCamel name
     in
     if name /= camelCaseName then
-        [ varError range name camelCaseName ]
+        [ makeError node camelCaseName ]
 
     else
         []
@@ -198,6 +213,30 @@ moduleNameNode node =
 
 
 --- ERROR HELPERS
+
+
+aliasError : Node String -> String -> Error {}
+aliasError name camelCase =
+    Rule.error
+        { message = String.concat [ "Wrong case style for `", Node.value name, "` alias." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All aliases must be named using the camelCase style.  For this alias that would be `", camelCase, "`." ]
+            ]
+        }
+        (Node.range name)
+
+
+argumentError : Node String -> String -> Error {}
+argumentError name camelCase =
+    Rule.error
+        { message = String.concat [ "Wrong case style for `", Node.value name, "` argument." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All arguments must be named using the camelCase style.  For this argument that would be `", camelCase, "`." ]
+            ]
+        }
+        (Node.range name)
 
 
 functionError : Node String -> String -> Error {}
@@ -272,18 +311,13 @@ typeError name pascalCase =
         (Node.range name)
 
 
-varNodeError : Node String -> String -> Error {}
-varNodeError node camelCase =
-    varError (Node.range node) (Node.value node) camelCase
-
-
-varError : Range -> String -> String -> Error {}
-varError range name camelCase =
+variableError : Node String -> String -> Error {}
+variableError name camelCase =
     Rule.error
-        { message = String.concat [ "Wrong case style for `", name, "` constant." ]
+        { message = String.concat [ "Wrong case style for `", Node.value name, "` constant." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All constants must be named using the camelCase style.  For this constant that would be `", camelCase, "`." ]
             ]
         }
-        range
+        (Node.range name)

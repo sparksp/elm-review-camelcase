@@ -35,6 +35,74 @@ a = 1"""
         ]
 
 
+testFunctionArgumentNames : Test
+testFunctionArgumentNames =
+    describe "function argument names"
+        [ test "should not report when arguments are camelCase" <|
+            \_ ->
+                """
+module A exposing (..)
+addOne toNumber = 1
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should report when var arguments are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+addOne to_number = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ argumentError "to_number" "toNumber"
+                        ]
+        , test "should report when record arguments are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+fullname { first_name, last_name } = ""
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ argumentError "first_name" "firstName"
+                        , argumentError "last_name" "lastName"
+                        ]
+        , test "should report when tuple arguments are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+fullname ( first_name, last_name ) = ""
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ argumentError "first_name" "firstName"
+                        , argumentError "last_name" "lastName"
+                        ]
+        , test "should report when type arguments are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+fullname (Person first_name last_name) = ""
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ argumentError "first_name" "firstName"
+                        , argumentError "last_name" "lastName"
+                        ]
+        , test "should report when aliased arguments are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+fullname ({ first_name, last_name } as person_record) = ""
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ argumentError "first_name" "firstName"
+                        , argumentError "last_name" "lastName"
+                        , aliasError "person_record" "personRecord"
+                        ]
+        ]
+
+
 testFunctionNames : Test
 testFunctionNames =
     describe "function names"
@@ -360,6 +428,7 @@ all : Test
 all =
     describe "UseCamelCase"
         [ testCustomTypeNames
+        , testFunctionArgumentNames
         , testFunctionNames
         , testImportAliasNames
         , testLetInNames
@@ -372,6 +441,30 @@ all =
 
 
 --- HELPERS
+
+
+aliasError : String -> String -> Review.Test.ExpectedError
+aliasError snake_case camelCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` alias." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All aliases must be named using the camelCase style.  For this alias that would be `", camelCase, "`." ]
+            ]
+        , under = snake_case
+        }
+
+
+argumentError : String -> String -> Review.Test.ExpectedError
+argumentError snake_case camelCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` argument." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All arguments must be named using the camelCase style.  For this argument that would be `", camelCase, "`." ]
+            ]
+        , under = snake_case
+        }
 
 
 constantError : String -> String -> Review.Test.ExpectedError

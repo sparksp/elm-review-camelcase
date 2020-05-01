@@ -32,6 +32,52 @@ a = 1"""
                         , typeNameError "SMALL_INTEGER" "SmallInteger"
                         , typeNameError "FLOATER" "Floater"
                         ]
+        , test "should report when custom type generics are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+type Foo sub_type = Foo String
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ genericError "sub_type" "subType"
+                        ]
+        ]
+
+
+testCustomTypeVariants : Test
+testCustomTypeVariants =
+    describe "custom type variant names"
+        [ test "should not report when variants are PascalCase" <|
+            \_ ->
+                """
+module MenuState exposing (..)
+type MenuState = OpenState | ClosedState
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
+        , test "should report when variants are not PascalCase and hint the correct name" <|
+            \_ ->
+                """
+module MenuState exposing (..)
+type MenuState = Open_State | Closed_State
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ typeVariantError "Open_State" "OpenState"
+                        , typeVariantError "Closed_State" "ClosedState"
+                        ]
+        , test "should report when variant arguments are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+type Foo = Bar { first_name : String, last_name : String }
+a = 1"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ recordKeyError "first_name" "firstName"
+                        , recordKeyError "last_name" "lastName"
+                        ]
         ]
 
 
@@ -428,6 +474,7 @@ all : Test
 all =
     describe "UseCamelCase"
         [ testCustomTypeNames
+        , testCustomTypeVariants
         , testFunctionArgumentNames
         , testFunctionNames
         , testImportAliasNames
@@ -474,6 +521,18 @@ functionError snake_case camelCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All functions must be named using the camelCase style.  For this function that would be `", camelCase, "`." ]
+            ]
+        , under = snake_case
+        }
+
+
+genericError : String -> String -> Review.Test.ExpectedError
+genericError snake_case camelCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` generic." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All generics must be named using the camelCase style.  For this generic that would be `", camelCase, "`." ]
             ]
         , under = snake_case
         }
@@ -534,6 +593,18 @@ typeNameError snake_case pascalCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All types must be named using the PascalCase style.  For this type that would be `", pascalCase, "`." ]
+            ]
+        , under = snake_case
+        }
+
+
+typeVariantError : String -> String -> Review.Test.ExpectedError
+typeVariantError snake_case pascalCase =
+    Review.Test.error
+        { message = String.concat [ "Wrong case style for `", snake_case, "` variant." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All variants must be named using the PascalCase style.  For this variant that would be `", pascalCase, "`." ]
             ]
         , under = snake_case
         }

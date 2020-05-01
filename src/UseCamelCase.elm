@@ -13,6 +13,7 @@ import Elm.Syntax.Module as Module exposing (Module)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
 import Elm.Syntax.Pattern as Pattern exposing (Pattern)
+import Elm.Syntax.Type as Type
 import Elm.Syntax.TypeAnnotation as TypeAnnotation exposing (TypeAnnotation)
 import ReCase
 import Review.Rule as Rule exposing (Error, Rule)
@@ -50,8 +51,10 @@ declarationVisitor node =
             checkStringNode typeError ReCase.toPascal name
                 ++ checkTypeAnnotation typeAnnotation
 
-        Declaration.CustomTypeDeclaration { name } ->
+        Declaration.CustomTypeDeclaration { name, generics, constructors } ->
             checkStringNode typeError ReCase.toPascal name
+                ++ List.concatMap (checkStringNode genericError ReCase.toCamel) generics
+                ++ List.concatMap checkValueConstructor constructors
 
         Declaration.FunctionDeclaration { declaration } ->
             checkStringNode functionError ReCase.toCamel (declaration |> Node.value |> .name)
@@ -76,6 +79,12 @@ expressionVisitor node =
 
 
 --- NODE HELPERS
+
+
+checkValueConstructor : Node Type.ValueConstructor -> List (Error {})
+checkValueConstructor node =
+    checkStringNode typeVariantError ReCase.toPascal (node |> Node.value |> .name)
+        ++ List.concatMap checkTypeAnnotation (node |> Node.value |> .arguments)
 
 
 checkTypeAnnotation : Node TypeAnnotation -> List (Error {})
@@ -251,6 +260,18 @@ functionError name camelCase =
         (Node.range name)
 
 
+genericError : Node String -> String -> Error {}
+genericError name camelCase =
+    Rule.error
+        { message = String.concat [ "Wrong case style for `", Node.value name, "` generic." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All generics must be named using the camelCase style.  For this generic that would be `", camelCase, "`." ]
+            ]
+        }
+        (Node.range name)
+
+
 importAliasError : Node ModuleName -> List String -> Error {}
 importAliasError moduleName pascalCase =
     Rule.error
@@ -306,6 +327,18 @@ typeError name pascalCase =
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All types must be named using the PascalCase style.  For this type that would be `", pascalCase, "`." ]
+            ]
+        }
+        (Node.range name)
+
+
+typeVariantError : Node String -> String -> Error {}
+typeVariantError name pascalCase =
+    Rule.error
+        { message = String.concat [ "Wrong case style for `", Node.value name, "` variant." ]
+        , details =
+            [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
+            , String.concat [ "All variants must be named using the PascalCase style.  For this variant that would be `", pascalCase, "`." ]
             ]
         }
         (Node.range name)

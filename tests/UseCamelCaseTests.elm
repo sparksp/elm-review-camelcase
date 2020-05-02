@@ -14,7 +14,7 @@ testCaseStatements =
 module A exposing (..)
 a =
     case foo of
-        Some any_value ->
+        Some camelValue any_value ->
             1
 """
                     |> Review.Test.run rule
@@ -27,20 +27,11 @@ a =
 testCustomTypeNames : Test
 testCustomTypeNames =
     describe "custom type names"
-        [ test "should not report when custom types are PascalCase" <|
+        [ test "should report when custom types are not PascalCase and hint the correct name" <|
             \_ ->
                 """
 module Math.Special exposing (..)
-type IntegerNumber = Whole Int
-type SmallInteger = Small Int
-type Floater = Float Int Int
-a = 1"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report when custom types are not PascalCase and hint the correct name" <|
-            \_ ->
-                """
-module Math.Special exposing (..)
+type PascalNumber = Pascal Int
 type Integer_Number = Whole Int
 type SMALL_INTEGER = Small Int
 type FLOATER = Float Int Int
@@ -55,7 +46,7 @@ a = 1"""
             \_ ->
                 """
 module A exposing (..)
-type Foo sub_type = Foo String
+type Foo camelType sub_type = Foo String
 a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
@@ -67,19 +58,11 @@ a = 1"""
 testCustomTypeVariants : Test
 testCustomTypeVariants =
     describe "custom type variant names"
-        [ test "should not report when variants are PascalCase" <|
+        [ test "should report when variants are not PascalCase and hint the correct name" <|
             \_ ->
                 """
 module MenuState exposing (..)
-type MenuState = OpenState | ClosedState
-a = 1"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report when variants are not PascalCase and hint the correct name" <|
-            \_ ->
-                """
-module MenuState exposing (..)
-type MenuState = Open_State | Closed_State
+type MenuState = PascalState | Open_State | Closed_State
 a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
@@ -90,7 +73,7 @@ a = 1"""
             \_ ->
                 """
 module A exposing (..)
-type Foo = Bar { first_name : String, last_name : String }
+type Foo = Bar { camelName : String, first_name : String, last_name : String }
 a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
@@ -103,19 +86,11 @@ a = 1"""
 testFunctionArgumentNames : Test
 testFunctionArgumentNames =
     describe "function argument names"
-        [ test "should not report when arguments are camelCase" <|
+        [ test "should report when var arguments are not camelCase and hint the correct name" <|
             \_ ->
                 """
 module A exposing (..)
-addOne toNumber = 1
-"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report when var arguments are not camelCase and hint the correct name" <|
-            \_ ->
-                """
-module A exposing (..)
-addOne to_number = 1"""
+addOne camelNumber to_number = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
                         [ argumentError "to_number" "toNumber"
@@ -133,29 +108,27 @@ fullname { camelName, snake_name } = ""
             \_ ->
                 """
 module A exposing (..)
-fullname ( first_name, last_name ) = ""
+fullname ( camelName, last_name ) = ""
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
-                        [ argumentError "first_name" "firstName"
-                        , argumentError "last_name" "lastName"
+                        [ argumentError "last_name" "lastName"
                         ]
         , test "should report when type arguments are not camelCase and hint the correct name" <|
             \_ ->
                 """
 module A exposing (..)
-fullname (Person first_name last_name) = ""
+fullname (Person camelName last_name) = ""
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
-                        [ argumentError "first_name" "firstName"
-                        , argumentError "last_name" "lastName"
+                        [ argumentError "last_name" "lastName"
                         ]
         , test "should report when aliased arguments are not camelCase and hint the correct name" <|
             \_ ->
                 """
 module A exposing (..)
-fullname ((Person inner_person) as outer_person) = ""
+fullname ((Person inner_person) as outer_person) ((Person innerCamelPerson) as outerCamelPerson) = ""
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
@@ -168,26 +141,21 @@ fullname ((Person inner_person) as outer_person) = ""
 testFunctionNames : Test
 testFunctionNames =
     describe "function names"
-        [ test "should not report when functions are camelCase" <|
+        [ test "should report snake_case functions, and hint the camelCase name" <|
             \_ ->
                 """
 module A exposing (..)
-addOne = 1"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report snake_case functions, and hint the camelCase name" <|
-            \_ ->
-                """
-module A exposing (..)
-add_one n = n + 1"""
+addOne = 1
+add_two n = n + 2"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
-                        [ functionError "add_one" "addOne"
+                        [ functionError "add_two" "addTwo"
                         ]
         , test "should ignore trailing underscores" <|
             \_ ->
                 """
 module A exposing (..)
+addOne = 1
 addOne_ n = n + 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectNoErrors
@@ -197,20 +165,11 @@ addOne_ n = n + 1"""
 testFunctionSignatures : Test
 testFunctionSignatures =
     describe "function signatures"
-        [ test "should not report when signatures are camelCase" <|
+        [ test "should report when records are not camelCase and hint the correct name" <|
             \_ ->
                 """
 module A exposing (..)
-a : { firstName : String } -> { a | className : String } -> String
-a = ""
-"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report when records are not camelCase and hint the correct name" <|
-            \_ ->
-                """
-module A exposing (..)
-a : { first_name : String, class_name : String } -> String
+a : { camelName : String, first_name : String, class_name : String } -> String
 a = ""
 """
                     |> Review.Test.run rule
@@ -222,7 +181,7 @@ a = ""
             \_ ->
                 """
 module A exposing (..)
-a : { any_record | first_name : String, class_name : String } -> String
+a : { any_record | camelName : String, first_name : String } -> { camelRecord | class_name : String } -> String
 a = ""
 """
                     |> Review.Test.run rule
@@ -235,7 +194,7 @@ a = ""
             \_ ->
                 """
 module A exposing (..)
-a : any_value -> Int
+a : camelType -> any_value -> Int
 a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
@@ -245,7 +204,7 @@ a = 1"""
             \_ ->
                 """
 module A exposing (..)
-a : Maybe (any_value -> Int) -> Int
+a : Maybe (camelType -> any_value -> Int) -> Int
 a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
@@ -255,7 +214,7 @@ a = 1"""
             \_ ->
                 """
 module A exposing (..)
-a : ( any_value, { first_name : String } ) -> Int
+a : ( camelValue, any_value, { first_name : String } ) -> Int
 a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
@@ -268,23 +227,8 @@ a = 1"""
 testImportAliasNames : Test
 testImportAliasNames =
     describe "import aliases"
-        [ test "should not report when imports are not aliased" <|
-            \_ ->
-                """
-module A exposing (..)
-import B
-a = 1"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should not report when imports have PascalCase names" <|
-            \_ ->
-                """
-module A exposing (..)
-import Maths.AddOne as AddOne
-a = 1"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should not report when imported module is not PascalCase" <|
+        [ test "should not report when imported module is not PascalCase" <|
+            -- imported module name should be detected were it is declared
             \_ ->
                 """
 module A exposing (..)
@@ -293,6 +237,7 @@ a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectNoErrors
         , test "should not report when imported module is not PascalCase but the alias is" <|
+            -- imported module name should be detected were it is declared
             \_ ->
                 """
 module A exposing (..)
@@ -320,7 +265,7 @@ testLambdaFunctionArguments =
                 """
 module A exposing (..)
 a =
-    List.map (\\first_name count -> 1) list
+    List.map (\\first_name camelName -> 1) list
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
@@ -331,19 +276,7 @@ a =
 testLetInNames : Test
 testLetInNames =
     describe "let..in names"
-        [ test "should not report when names are camelCase" <|
-            \_ ->
-                """
-module A exposing (..)
-age =
-    let
-        { name, age } = person
-    in
-    age + 1
-"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report when function names are not camelCase and hint the correct name" <|
+        [ test "should report when function names are not camelCase and hint the correct name" <|
             \_ ->
                 """
 module A exposing (..)
@@ -351,6 +284,7 @@ age =
     let
         person_age = person.age
         person_name = person.name
+        camelName = person.camel
     in
     1
 """
@@ -378,14 +312,13 @@ age =
 module A exposing (..)
 age =
     let
-        ( person_name, person_age ) = person.split
+        ( personCamel, person_age ) = person.split
     in
     1
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
-                        [ variableError "person_name" "personName"
-                        , variableError "person_age" "personAge"
+                        [ variableError "person_age" "personAge"
                         ]
         , test "should report when uncons names are not camelCase and hint the correct name" <|
             \_ ->
@@ -394,6 +327,7 @@ module A exposing (..)
 age =
     let
         person_age :: other_ages = ages
+        firstCamel :: otherCamels = allCamels
     in
     1
 """
@@ -408,7 +342,7 @@ age =
 module A exposing (..)
 age =
     let
-        [ person_age, person_name ] = person
+        [ person_age, person_name, personCamel ] = person
     in
     1
 """
@@ -423,8 +357,8 @@ age =
 module A exposing (..)
 age =
     let
-        calc : any_type -> Int
-        calc some_thing = 1
+        calc : any_type -> camelType -> Int
+        calc some_thing camelThing = 1
     in
     1
 """
@@ -484,21 +418,14 @@ a = 1"""
 testPortNames : Test
 testPortNames =
     describe "port names"
-        [ test "should not report when port names are camelCase" <|
-            \_ ->
-                """
-port module Ports exposing (..)
-port sendData : String -> Cmd msg
-port recvData : (String -> msg) -> Sub msg
-a = 1"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report when port names are not camelCase and hint the correct name" <|
+        [ test "should report when port names are not camelCase and hint the correct name" <|
             \_ ->
                 """
 port module Ports exposing (..)
 port send_data : String -> Cmd msg
 port recv_data : (String -> msg) -> Sub msg
+port playMusic : String -> Cmd msg
+port getFile : (String -> msg) -> Sub msg
 a = 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
@@ -511,24 +438,14 @@ a = 1"""
 testRecordKeysInTypeAliases : Test
 testRecordKeysInTypeAliases =
     describe "record keys in type aliases"
-        [ test "should not report when keys are camelCase" <|
-            \_ ->
-                """
-module User exposing (..)
-type alias User =
-    { dateOfBirth : String
-    , companyName : String
-    }
-"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report when keys are not camelCase and hint the correct name" <|
+        [ test "should report when keys are not camelCase and hint the correct name" <|
             \_ ->
                 """
 module User exposing (..)
 type alias User =
     { date_of_birth : String
     , company_name : String
+    , camelKey : String
     }
 """
                     |> Review.Test.run rule
@@ -545,6 +462,7 @@ type alias User =
         { address_line_1 : String
         , address_line_2 : String
         , postal_code : String
+        , camelKey : String
         }
     }
 """
@@ -560,18 +478,11 @@ type alias User =
 testTypeAliasNames : Test
 testTypeAliasNames =
     describe "type alias names"
-        [ test "should not report when type alias names are PascalCase" <|
+        [ test "should report when type alias names are not PascalCase and hint the correct name" <|
             \_ ->
                 """
 module User exposing (..)
-type alias UserName = String
-a = 1"""
-                    |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report when type alias names are not PascalCase and hint the correct name" <|
-            \_ ->
-                """
-module User exposing (..)
+type alias PascalName = String
 type alias User_Name = String
 type alias User_email = String
 type alias USER_PHONE = String

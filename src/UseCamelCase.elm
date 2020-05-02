@@ -49,19 +49,19 @@ declarationVisitor : Node Declaration -> List (Error {})
 declarationVisitor node =
     case Node.value node of
         Declaration.AliasDeclaration { name, typeAnnotation } ->
-            checkStringNode typeError ReCase.toPascal name
+            checkStringNode typeError toPascal name
                 ++ checkTypeAnnotation typeAnnotation
 
         Declaration.CustomTypeDeclaration { name, generics, constructors } ->
-            checkStringNode typeError ReCase.toPascal name
-                ++ List.concatMap (checkStringNode genericError ReCase.toCamel) generics
+            checkStringNode typeError toPascal name
+                ++ List.concatMap (checkStringNode genericError toCamel) generics
                 ++ List.concatMap checkValueConstructor constructors
 
         Declaration.FunctionDeclaration function ->
             checkFunction function
 
         Declaration.PortDeclaration { name } ->
-            checkStringNode portError ReCase.toCamel name
+            checkStringNode portError toCamel name
 
         -- Deprecated
         Declaration.Destructuring _ _ ->
@@ -110,7 +110,7 @@ checkSignature node =
 
 checkValueConstructor : Node Type.ValueConstructor -> List (Error {})
 checkValueConstructor node =
-    checkStringNode typeVariantError ReCase.toPascal (node |> Node.value |> .name)
+    checkStringNode typeVariantError toPascal (node |> Node.value |> .name)
         ++ List.concatMap checkTypeAnnotation (node |> Node.value |> .arguments)
 
 
@@ -118,7 +118,7 @@ checkTypeAnnotation : Node TypeAnnotation -> List (Error {})
 checkTypeAnnotation node =
     case Node.value node of
         TypeAnnotation.GenericType name ->
-            checkStringNode genericError ReCase.toCamel (Node.map (\_ -> name) node)
+            checkStringNode genericError toCamel (Node.map (\_ -> name) node)
 
         TypeAnnotation.Typed _ list ->
             List.concatMap checkTypeAnnotation list
@@ -133,7 +133,7 @@ checkTypeAnnotation node =
             List.concatMap checkRecordField recordFields
 
         TypeAnnotation.GenericRecord name recordFields ->
-            checkStringNode genericError ReCase.toCamel name
+            checkStringNode genericError toCamel name
                 ++ List.concatMap checkRecordField (Node.value recordFields)
 
         TypeAnnotation.FunctionTypeAnnotation first second ->
@@ -147,7 +147,7 @@ checkRecordField node =
         ( name, typeAnnotation ) =
             Node.value node
     in
-    checkStringNode recordKeyError ReCase.toCamel name
+    checkStringNode recordKeyError toCamel name
         ++ checkTypeAnnotation typeAnnotation
 
 
@@ -163,7 +163,7 @@ checkLetDeclaration node =
 
 checkFunction : Expression.Function -> List (Error {})
 checkFunction { declaration, signature } =
-    checkStringNode functionError ReCase.toCamel (declaration |> Node.value |> .name)
+    checkStringNode functionError toCamel (declaration |> Node.value |> .name)
         ++ List.concatMap (checkPattern argumentError) (declaration |> Node.value |> .arguments)
         ++ checkMaybeSignature signature
 
@@ -177,7 +177,7 @@ checkModuleName makeError node =
 
         pascalCaseName : List String
         pascalCaseName =
-            List.map ReCase.toPascal name
+            List.map toPascal name
     in
     if List.any identity <| List.map2 (/=) name pascalCaseName then
         [ makeError node pascalCaseName ]
@@ -227,7 +227,7 @@ checkPattern toError node =
                 |> checkVar toError
 
         Pattern.AsPattern subPattern asName ->
-            checkStringNode aliasError ReCase.toCamel asName
+            checkStringNode aliasError toCamel asName
                 ++ checkPattern toError subPattern
 
         Pattern.NamedPattern _ list ->
@@ -264,7 +264,7 @@ checkVar makeError node =
 
         camelCaseName : String
         camelCaseName =
-            ReCase.toCamel name
+            toCamel name
     in
     if name /= camelCaseName then
         [ makeError node camelCaseName ]
@@ -284,6 +284,22 @@ moduleNameNode node =
 
         Module.EffectModule data ->
             data.moduleName
+
+
+
+--- CASE CONVERSION
+
+
+toCamel : String -> String
+toCamel string =
+    ReCase.toCamel string
+        |> Result.withDefault string
+
+
+toPascal : String -> String
+toPascal string =
+    ReCase.toPascal string
+        |> Result.withDefault string
 
 
 

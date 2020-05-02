@@ -11,26 +11,17 @@ import Parser exposing ((|.), (|=), Parser)
 
 {-| Convert the given string to camelCase.
 -}
-toCamel : String -> String
+toCamel : String -> Result (List Parser.DeadEnd) String
 toCamel string =
-    case Parser.run getPascalCase string of
-        Ok pascalCase ->
-            toLowerFirst pascalCase
-
-        Err _ ->
-            string
+    toPascal string
+        |> Result.map toLowerFirst
 
 
 {-| Convert the given string to PascalCase.
 -}
-toPascal : String -> String
+toPascal : String -> Result (List Parser.DeadEnd) String
 toPascal string =
-    case Parser.run getPascalCase string of
-        Ok pascalCase ->
-            pascalCase
-
-        Err _ ->
-            string
+    Parser.run getPascalCase string
 
 
 
@@ -85,16 +76,19 @@ toTitleCase string =
 
 getPascalCase : Parser String
 getPascalCase =
-    Parser.loop [] stepPascalCase
+    Parser.oneOf
+        [ Parser.backtrackable <| Parser.loop [] (stepPascalCase snakeCaseWord)
+        , Parser.loop [] (stepPascalCase word)
+        ]
         |> Parser.map String.concat
 
 
-stepPascalCase : List String -> Parser (Parser.Step (List String) (List String))
-stepPascalCase words =
+stepPascalCase : Parser String -> List String -> Parser (Parser.Step (List String) (List String))
+stepPascalCase string words =
     Parser.succeed (collectTitleCaseWords words)
         |= Parser.oneOf
             [ Parser.succeed Just
-                |= word
+                |= string
             , Parser.succeed Nothing
                 |. Parser.end
             ]
@@ -110,9 +104,9 @@ collectTitleCaseWords words maybeString =
             Parser.Done (List.reverse words)
 
 
-{-| A word either Title, UPPER or LOWER.
+{-| A word either Title or lower.
 
-    "One", "TWO", "three"
+    "One", "two"
 
 Leading underscores are removed:
 
@@ -128,7 +122,7 @@ A single trailing underscore may be kept:
 
 Digits may follow letters or underscores:
 
-    "one23", "One23", "ONE23", "_23"
+    "one23", "One23", "_23"
 
 -}
 word : Parser String
@@ -143,28 +137,53 @@ word =
                 , Parser.lazy (\_ -> word)
                 ]
         , Parser.succeed identity
-            |= upperToken
+            |= titleCaseToken
         , Parser.succeed identity
-            |= lowerToken
+            |= lowerCaseToken
         ]
 
 
-{-| Upper case char followed by all upper or all lower, and optionally trailing digits.
+{-| A word in snake or constant case.of
 
-    E.g., "Hello" or "HELLO" or "Hello53" or "HELLO53"
+    Must be either UPPER_ or lower_, a trailing underscore is required but will be removed.
 
 -}
-upperToken : Parser String
-upperToken =
+snakeCaseWord : Parser String
+snakeCaseWord =
+    Parser.succeed identity
+        |= Parser.oneOf
+            [ upperCaseToken
+            , lowerCaseToken
+            , numberToken
+            ]
+        |. Parser.oneOf
+            [ Parser.symbol "_"
+            , Parser.end
+            ]
+
+
+{-| Upper case char followed by all lower case, and optionally trailing digits.
+
+    E.g., "Hello" or "Hello53"
+
+-}
+titleCaseToken : Parser String
+titleCaseToken =
     Parser.getChompedString <|
         Parser.succeed ()
             |. Parser.chompIf Char.isUpper
-            |. Parser.oneOf
-                [ Parser.chompIf Char.isUpper
-                    |. Parser.chompWhile Char.isUpper
-                , Parser.chompIf Char.isLower
-                    |. Parser.chompWhile Char.isLower
-                ]
+            |. Parser.chompWhile Char.isLower
+            |. Parser.chompWhile Char.isDigit
+
+
+{-| Upper case char followed by all upper case, and optionally trailing digits.
+-}
+upperCaseToken : Parser String
+upperCaseToken =
+    Parser.getChompedString <|
+        Parser.succeed ()
+            |. Parser.chompIf Char.isUpper
+            |. Parser.chompWhile Char.isUpper
             |. Parser.chompWhile Char.isDigit
 
 
@@ -173,8 +192,8 @@ upperToken =
     E.g., "hello" or "hello53"
 
 -}
-lowerToken : Parser String
-lowerToken =
+lowerCaseToken : Parser String
+lowerCaseToken =
     Parser.getChompedString <|
         Parser.succeed ()
             |. Parser.chompIf Char.isLower
@@ -188,4 +207,5 @@ numberToken : Parser String
 numberToken =
     Parser.getChompedString <|
         Parser.succeed ()
+            |. Parser.chompIf Char.isDigit
             |. Parser.chompWhile Char.isDigit

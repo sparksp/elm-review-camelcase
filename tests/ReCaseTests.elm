@@ -11,19 +11,19 @@ camelTests =
         [ test "from camelCase" <|
             \_ ->
                 toCamel "oneTwoThreeFourFive"
-                    |> Expect.equal "oneTwoThreeFourFive"
+                    |> Expect.equal (Ok "oneTwoThreeFourFive")
         , test "from CONSTANT_CASE" <|
             \_ ->
                 toCamel "ONE_TWO_THREE_FOUR_FIVE"
-                    |> Expect.equal "oneTwoThreeFourFive"
+                    |> Expect.equal (Ok "oneTwoThreeFourFive")
         , test "from PascalCase" <|
             \_ ->
                 toCamel "OneTwoThreeFourFive"
-                    |> Expect.equal "oneTwoThreeFourFive"
+                    |> Expect.equal (Ok "oneTwoThreeFourFive")
         , test "from snake_case" <|
             \_ ->
                 toCamel "one_two_three_four_five"
-                    |> Expect.equal "oneTwoThreeFourFive"
+                    |> Expect.equal (Ok "oneTwoThreeFourFive")
         ]
 
 
@@ -33,19 +33,19 @@ pascalTests =
         [ test "from camelCase" <|
             \_ ->
                 toPascal "oneTwoThreeFourFive"
-                    |> Expect.equal "OneTwoThreeFourFive"
+                    |> Expect.equal (Ok "OneTwoThreeFourFive")
         , test "from CONSTANT_CASE" <|
             \_ ->
                 toPascal "ONE_TWO_THREE_FOUR_FIVE"
-                    |> Expect.equal "OneTwoThreeFourFive"
+                    |> Expect.equal (Ok "OneTwoThreeFourFive")
         , test "from PascalCase" <|
             \_ ->
                 toPascal "OneTwoThreeFourFive"
-                    |> Expect.equal "OneTwoThreeFourFive"
+                    |> Expect.equal (Ok "OneTwoThreeFourFive")
         , test "from snake_case" <|
             \_ ->
                 toPascal "one_two_three_four_five"
-                    |> Expect.equal "OneTwoThreeFourFive"
+                    |> Expect.equal (Ok "OneTwoThreeFourFive")
         ]
 
 
@@ -55,27 +55,37 @@ elmTests =
         [ test "Single upper char" <|
             \_ ->
                 toPascal "A"
-                    |> Expect.equal "A"
+                    |> Expect.equal (Ok "A")
         , test "Single lower char" <|
             \_ ->
                 toCamel "a"
-                    |> Expect.equal "a"
+                    |> Expect.equal (Ok "a")
         , test "Trailing underscore" <|
             \_ ->
                 toCamel "addOne_"
-                    |> Expect.equal "addOne_"
+                    |> Expect.equal (Ok "addOne_")
         , test "Camel with numbers" <|
             \_ ->
                 toCamel "one23fourFive"
-                    |> Expect.equal "one23FourFive"
+                    |> Expect.equal (Ok "one23FourFive")
         , test "Pascal with numbers" <|
             \_ ->
                 toPascal "One23Four5"
-                    |> Expect.equal "One23Four5"
+                    |> Expect.equal (Ok "One23Four5")
         , test "Snake with numbers" <|
             \_ ->
                 toPascal "one_2_three_4_five"
-                    |> Expect.equal "One2Three4Five"
+                    |> Expect.equal (Ok "One2Three4Five")
+        ]
+
+
+singleLetterWordTests : Test
+singleLetterWordTests =
+    describe "single letter words"
+        [ test "toHTML" <|
+            \_ ->
+                toCamel "toHTML"
+                    |> Expect.equal (Ok "toHTML")
         ]
 
 
@@ -85,4 +95,5 @@ all =
         [ camelTests
         , pascalTests
         , elmTests
+        , singleLetterWordTests
         ]

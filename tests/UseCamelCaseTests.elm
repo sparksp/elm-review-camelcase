@@ -315,6 +315,22 @@ a = 1"""
         ]
 
 
+testLambdaFunctionArguments : Test
+testLambdaFunctionArguments =
+    describe "lambda function arguments"
+        [ test "should report when names are not camelCase and hint the correct name" <|
+            \_ ->
+                """
+module A exposing (..)
+a =
+    List.map (\\first_name count -> 1) list
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ argumentError "first_name" "firstName" ]
+        ]
+
+
 testLetInNames : Test
 testLetInNames =
     describe "let..in names"
@@ -586,6 +602,7 @@ all =
         , testFunctionNames
         , testFunctionSignatures
         , testImportAliasNames
+        , testLambdaFunctionArguments
         , testLetInNames
         , testModuleNames
         , testPortNames

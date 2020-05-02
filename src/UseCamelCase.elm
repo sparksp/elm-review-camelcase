@@ -76,6 +76,9 @@ expressionVisitor node =
         Expression.CaseExpression { cases } ->
             List.concatMap checkCase cases
 
+        Expression.LambdaExpression { args } ->
+            List.concatMap (checkPattern argumentError) args
+
         _ ->
             []
 

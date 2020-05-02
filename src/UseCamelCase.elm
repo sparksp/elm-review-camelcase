@@ -63,7 +63,11 @@ declarationVisitor node =
         Declaration.PortDeclaration { name } ->
             checkStringNode portError ReCase.toCamel name
 
-        _ ->
+        -- Deprecated
+        Declaration.Destructuring _ _ ->
+            []
+
+        Declaration.InfixDeclaration _ ->
             []
 
 

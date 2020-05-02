@@ -209,8 +209,8 @@ checkPattern toError node =
         Pattern.TuplePattern tuple ->
             List.concatMap (checkPattern toError) tuple
 
-        Pattern.RecordPattern record ->
-            List.concatMap (checkStringNode toError ReCase.toCamel) record
+        Pattern.RecordPattern _ ->
+            []
 
         Pattern.UnConsPattern leftPattern rightPattern ->
             checkPattern toError leftPattern ++ checkPattern toError rightPattern

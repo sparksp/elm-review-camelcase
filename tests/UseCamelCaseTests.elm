@@ -120,17 +120,15 @@ addOne to_number = 1"""
                     |> Review.Test.expectErrors
                         [ argumentError "to_number" "toNumber"
                         ]
-        , test "should report when record arguments are not camelCase and hint the correct name" <|
+        , test "should not report record arguments" <|
+            -- these should be detected where the record is defined
             \_ ->
                 """
 module A exposing (..)
-fullname { first_name, last_name } = ""
+fullname { camelName, snake_name } = ""
 """
                     |> Review.Test.run rule
-                    |> Review.Test.expectErrors
-                        [ argumentError "first_name" "firstName"
-                        , argumentError "last_name" "lastName"
-                        ]
+                    |> Review.Test.expectNoErrors
         , test "should report when tuple arguments are not camelCase and hint the correct name" <|
             \_ ->
                 """
@@ -157,13 +155,12 @@ fullname (Person first_name last_name) = ""
             \_ ->
                 """
 module A exposing (..)
-fullname ({ first_name, last_name } as person_record) = ""
+fullname ((Person inner_person) as outer_person) = ""
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectErrors
-                        [ argumentError "first_name" "firstName"
-                        , argumentError "last_name" "lastName"
-                        , aliasError "person_record" "personRecord"
+                        [ argumentError "inner_person" "innerPerson"
+                        , aliasError "outer_person" "outerPerson"
                         ]
         ]
 
@@ -362,21 +359,19 @@ age =
                         [ functionError "person_age" "personAge"
                         , functionError "person_name" "personName"
                         ]
-        , test "should report when record names are not camelCase and hint the correct name" <|
+        , test "should not report record arguments" <|
+            -- these should be detected where the record is defined
             \_ ->
                 """
 module A exposing (..)
 age =
     let
-        { person_name, person_age } = person
+        { camelField, snake_field } = person
     in
     1
 """
                     |> Review.Test.run rule
-                    |> Review.Test.expectErrors
-                        [ variableError "person_name" "personName"
-                        , variableError "person_age" "personAge"
-                        ]
+                    |> Review.Test.expectNoErrors
         , test "should report when tuple names are not camelCase and hint the correct name" <|
             \_ ->
                 """

@@ -69,8 +69,7 @@ Here are a few notes about the provided converters:
       - Pass: `person1`
       - Fail: `address1line` => `address1Line` (see the `L`)
       - Fail: `one_two3four_five` => `oneTwo3FourFive`
-  - "Unknown" suggestion.
-    If the converter fails to parse a term it will suggest "Unknown" as the replacement. If you encounter this please [report an issue on GitHub](https://github.com/sparksp/elm-review-camelcase/issues) so we can take a look!
+  - If the converter fails to parse a term it will suggest "Unknown" as the replacement. If you encounter this please [report an issue on GitHub](https://github.com/sparksp/elm-review-camelcase/issues) so we can take a look!
 
 -}
 rule : List Option -> Rule

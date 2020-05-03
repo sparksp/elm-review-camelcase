@@ -30,9 +30,45 @@ import Review.Rule as Rule exposing (Error, Rule)
 
 {-| Report any variables, constants, and other declarations that are using the wrong case style.
 
+    config : List Rule
     config =
         [ UseCamelCase.rule []
         ]
+
+
+## Ignoring specific files
+
+You can ignore the errors reported for specific file paths. Use it when you don't want to review generated source code or files from external sources that you copied over to your project and don't want to be touched.
+
+    config : List Rule
+    config =
+        [ UseCamelCase.rule []
+            |> Rule.ignoreErrorsForFiles [ "src/TW.elm" ]
+        ]
+
+There are more examples of [configuring exceptions](https://package.elm-lang.org/packages/jfmengels/elm-review/2.0.0/Review-Rule#configuring-exceptions) in the elm-review documentation.
+
+
+## When (not) to use this rule
+
+This rule will report any deviation from camelCase or PascalCase (as appropriate). Read the notes below and make sure that you and your team are 100% happy to adopt this for your codebase!
+
+Here are a few notes about the provided convertors:
+
+  - A single underscore at the end of a token is allowed (used for masking variables), but multiple trailing underscores will be squashed.
+      - Pass: `model_`
+      - Fail: `model___` => `model_`
+  - Single letter words and abbreviations are accepted.
+      - Pass: `hasAThing`
+      - Pass: `toHTML` (camelCase)
+      - Pass: `ToHTML` (PascalCase)
+  - We hint CONSTANT\_CASE parts as whole words.
+      - Fail: `CONSTANT_CASE` => `ConstantCase`
+      - Fail: `TO_HTML` => `ToHtml`
+  - We consider any numbers to be the end of a word.
+      - Pass: `person1`
+      - Fail: `address1line` => `address1Line` (see the `L`)
+      - Fail: `one_two3four_five` => `oneTwo3FourFive`
 
 -}
 rule : List Option -> Rule

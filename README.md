@@ -17,8 +17,8 @@ import UseCamelCase
 
 config : List Rule
 config =
-    [ UseCamelCase.rule []
+    [ UseCamelCase.rule UseCamelCase.default
     ]
 ```
 
-Detailed [configuration documentation](https://package.elm-lang.org/packages/sparksp/elm-review-camelcase/latest/UseCamelCase#Option) is provided with the rule.
+Detailed [configuration documentation](https://package.elm-lang.org/packages/sparksp/elm-review-camelcase/latest/UseCamelCase#configuration) is provided with the rule.

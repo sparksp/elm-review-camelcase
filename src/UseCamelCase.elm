@@ -1,7 +1,6 @@
 module UseCamelCase exposing
     ( rule
-    , Camel, Pascal
-    , Option(..), Case(..)
+    , default, withCamel, withPascal
     )
 
 {-|
@@ -9,19 +8,9 @@ module UseCamelCase exposing
 @docs rule
 
 
-## Implementation Notes
-
-@docs Camel, Pascal
-
-
-### Unknown suggestion
-
-If the converter fails to parse a term it will suggest "Unknown" as the replacement. We're confident that this will not happen, so if you encounter this please [report an issue on GitHub](https://github.com/sparksp/elm-review-camelcase/issues) so we can take a look.
-
-
 ## Configuration
 
-@docs Option, Case
+@docs default, withCamel, withPascal
 
 -}
 
@@ -43,33 +32,21 @@ import Review.Rule as Rule exposing (Error, Rule)
 
     config : List Rule
     config =
-        [ UseCamelCase.rule []
+        [ UseCamelCase.rule UseCamelCase.default
         ]
 
 
-### When (not) to use this rule
+## When (not) to use this rule
 
-This rule will report any deviation from [camelCase](#Camel) or [PascalCase](#Pascal) (as appropriate). Read the notes below and make sure that you and your team are 100% happy to adopt this for your codebase!
-
--}
-rule : List Option -> Rule
-rule options =
-    let
-        config : Config
-        config =
-            List.foldl updateConfig defaultConfig options
-    in
-    Rule.newModuleRuleSchema "UseCamelCase" ()
-        |> Rule.withSimpleModuleDefinitionVisitor (moduleDefinitionVisitor config)
-        |> Rule.withSimpleImportVisitor (importVisitor config)
-        |> Rule.withSimpleDeclarationVisitor (declarationVisitor config)
-        |> Rule.withSimpleExpressionVisitor (expressionVisitor config)
-        |> Rule.fromModuleRuleSchema
+This rule will report any deviation from [camelCase](#camel-case) or [PascalCase](#pascal-case) (as appropriate). Read the notes below and make sure that you and your team are 100% happy to adopt this for your codebase!
 
 
-{-| Variable and constant names must be formatted in **camelCase**, such that each word in the middle of the phrase begins with a capital letter, with no intervening spaces or punctuation. This includes all variables, function names and arguments, and port names.
+## Implementation Notes
 
-Here are a few notes about the provided implementation:
+
+### Camel Case
+
+Variable and constant names must be formatted in **camelCase**, such that each word in the middle of the phrase begins with a capital letter, with no intervening spaces or punctuation. This includes all variables, function names and arguments, and port names.
 
   - A single underscore at the end of a token is allowed (used for masking variables), but multiple trailing underscores will be squashed.
       - Pass: `model_`
@@ -82,14 +59,10 @@ Here are a few notes about the provided implementation:
       - Fail: `address_1stLine` => `address1StLine` (note the `St`)
       - Fail: `one_two3four_five` => `oneTwo3FourFive` (note the `Four`)
 
--}
-type Camel
-    = Camel
 
+### Pascal Case
 
-{-| Module and type names must be formatted in **PascalCase**, such that each word of the phrase begins with a capital letter, with no intervening spaces or punctuation.
-
-Here are a few notes about the provided implementation:
+Module and type names must be formatted in **PascalCase**, such that each word of the phrase begins with a capital letter, with no intervening spaces or punctuation.
 
   - Single-letter words and abbreviations are accepted.
       - Pass: `HasAThing`
@@ -103,33 +76,28 @@ Here are a few notes about the provided implementation:
       - Fail: `Address_1stLine` => `Address1StLine` (note the `St`)
       - Fail: `One_Two3four_Five` => `OneTwo3FourFive` (note the `Four`)
 
+
+### Unknown suggestion
+
+If the converter fails to parse a term it will suggest "Unknown" as the replacement. We're confident that this will not happen, so if you encounter this please [report an issue on GitHub](https://github.com/sparksp/elm-review-camelcase/issues) so we can take a look.
+
 -}
-type Pascal
-    = Pascal
+rule : Config -> Rule
+rule config =
+    Rule.newModuleRuleSchema "UseCamelCase" ()
+        |> Rule.withSimpleModuleDefinitionVisitor (moduleDefinitionVisitor config)
+        |> Rule.withSimpleImportVisitor (importVisitor config)
+        |> Rule.withSimpleDeclarationVisitor (declarationVisitor config)
+        |> Rule.withSimpleExpressionVisitor (expressionVisitor config)
+        |> Rule.fromModuleRuleSchema
 
 
-{-| If you do not like the provided case rules you can supply your own.
+{-| Default configuration that will suit most people.
 
     config : List Rule
     config =
-        [ UseCamelCase.rule
-            [ ToCamel customToCamel
-            , ToPascal customToPascal
-            ]
+        [ UseCamelCase.rule UseCamelCase.default
         ]
-
-Custom case converters must return the string wrapped in a [Case](#Case) of the correct type. You can easily wrap another library like this:
-
-    import ReCase
-    import UseCamelCase exposing (Case)
-
-    customToCamel : String -> Case UseCamelCase.Camel
-    customToCamel string =
-        Case (ReCase.recase ReCase.ToCamel string)
-
-    customToPascal : String -> Case UseCamelCase.Pascal
-    customToPascal string =
-        Case (ReCase.recase ReCase.ToPascal string)
 
 
 ### Ignoring specific files
@@ -138,62 +106,94 @@ You can ignore the errors reported for specific files. Use this when you don't w
 
     config : List Rule
     config =
-        [ UseCamelCase.rule []
+        [ UseCamelCase.rule UseCamelCase.default
             |> Rule.ignoreErrorsForFiles [ "src/TW.elm" ]
         ]
 
 There are more examples of [configuring exceptions](https://package.elm-lang.org/packages/jfmengels/elm-review/2.0.0/Review-Rule#configuring-exceptions) in the elm-review documentation.
 
 -}
-type Option
-    = ToCamel (String -> Case Camel)
-    | ToPascal (String -> Case Pascal)
+default : Config
+default =
+    Config
+        { toCamel = ToCase (Case << defaultToCamel)
+        , toPascal = ToCase (Case << defaultToPascal)
+        }
 
 
-{-| Represents a string of the given case.
+{-| If you do not like the provided camelCase rules you can supply your own.
 
-    camelCase : Case Camel
-    camelCase =
-        Case "aCamelCaseString"
-
-    pascalCase : Case Pascal
-    pascalCase =
-        Case "APascalCaseString"
+    config : List Rule
+    config =
+        [ UseCamelCase.rule
+            (UseCamelCase.default
+                |> UseCamelCase.withCamel customToCamel
+            )
+        ]
 
 -}
-type Case c
-    = Case String
+withCamel : (String -> String) -> Config -> Config
+withCamel toCamel (Config config) =
+    Config { config | toCamel = ToCase (Case << toCamel) }
+
+
+{-| If you do not like the provided PascalCase rules you can supply your own.
+
+    config : List Rule
+    config =
+        [ UseCamelCase.rule
+            (UseCamelCase.default
+                |> UseCamelCase.withPascal customToPascal
+            )
+        ]
+
+-}
+withPascal : (String -> String) -> Config -> Config
+withPascal toPascal (Config config) =
+    Config { config | toPascal = ToCase (Case << toPascal) }
 
 
 
 --- IMPLEMENTATION
 
 
+type Config
+    = Config
+        { toCamel : ToCase Camel
+        , toPascal : ToCase Pascal
+        }
+
+
 type ToCase c
     = ToCase (String -> Case c)
 
 
-type alias Config =
-    { toCamel : ToCase Camel
-    , toPascal : ToCase Pascal
-    }
+type Case c
+    = Case String
 
 
-defaultConfig : Config
-defaultConfig =
-    { toCamel = ToCase defaultToCamel
-    , toPascal = ToCase defaultToPascal
-    }
+type Camel
+    = Camel
 
 
-updateConfig : Option -> Config -> Config
-updateConfig option config =
-    case option of
-        ToCamel newToCamel ->
-            { config | toCamel = ToCase newToCamel }
+type Pascal
+    = Pascal
 
-        ToPascal newToPascal ->
-            { config | toPascal = ToCase newToPascal }
+
+
+--- CASE CONVERSION
+
+
+defaultToCamel : String -> String
+defaultToCamel string =
+    ReCase.toCamel string
+        |> Result.withDefault "unknown"
+
+
+defaultToPascal : String -> String
+defaultToPascal string =
+    ReCase.toPascal string
+        |> Result.withDefault "Unknown"
 
 
 
@@ -201,12 +201,12 @@ updateConfig option config =
 
 
 moduleDefinitionVisitor : Config -> Node Module -> List (Error {})
-moduleDefinitionVisitor { toPascal } node =
+moduleDefinitionVisitor (Config { toPascal }) node =
     checkModuleName moduleError toPascal (moduleNameNode node)
 
 
 importVisitor : Config -> Node Import -> List (Error {})
-importVisitor { toPascal } node =
+importVisitor (Config { toPascal }) node =
     node
         |> Node.value
         |> .moduleAlias
@@ -215,7 +215,7 @@ importVisitor { toPascal } node =
 
 
 declarationVisitor : Config -> Node Declaration -> List (Error {})
-declarationVisitor ({ toCamel, toPascal } as config) node =
+declarationVisitor ((Config { toCamel, toPascal }) as config) node =
     case Node.value node of
         Declaration.AliasDeclaration { name, typeAnnotation } ->
             checkString typeError toPascal name
@@ -241,7 +241,7 @@ declarationVisitor ({ toCamel, toPascal } as config) node =
 
 
 expressionVisitor : Config -> Node Expression -> List (Error {})
-expressionVisitor { toCamel } node =
+expressionVisitor (Config { toCamel }) node =
     case Node.value node of
         Expression.LetExpression { declarations } ->
             List.concatMap (checkLetDeclaration toCamel) declarations
@@ -278,7 +278,7 @@ checkSignature toCamel node =
 
 
 checkValueConstructor : Config -> Node Type.ValueConstructor -> List (Error {})
-checkValueConstructor { toCamel, toPascal } node =
+checkValueConstructor (Config { toCamel, toPascal }) node =
     checkString typeVariantError toPascal (node |> Node.value |> .name)
         ++ List.concatMap (checkTypeAnnotation toCamel) (node |> Node.value |> .arguments)
 
@@ -457,24 +457,6 @@ moduleNameNode node =
 
         Module.EffectModule data ->
             data.moduleName
-
-
-
---- CASE CONVERSION
-
-
-defaultToCamel : String -> Case Camel
-defaultToCamel string =
-    ReCase.toCamel string
-        |> Result.withDefault "unknown"
-        |> Case
-
-
-defaultToPascal : String -> Case Pascal
-defaultToPascal string =
-    ReCase.toPascal string
-        |> Result.withDefault "Unknown"
-        |> Case
 
 
 

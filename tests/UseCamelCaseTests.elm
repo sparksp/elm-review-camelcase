@@ -501,7 +501,7 @@ a = 1"""
 testOptions : Test
 testOptions =
     describe "options"
-        [ test "it uses custom convertors" <|
+        [ test "it uses custom converters" <|
             \_ ->
                 let
                     toCamelBar : String -> UseCamelCase.Case UseCamelCase.Camel

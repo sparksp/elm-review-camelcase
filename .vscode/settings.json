@@ -1,0 +1,14 @@
+{
+    "cSpell.language": "en-GB",
+    "cSpell.enableFiletypes": [
+        "elm",
+        "markdown"
+    ],
+    "cSpell.words": [
+        "Tuple",
+        "Tupled",
+        "concat",
+        "foldl",
+        "recase"
+    ]
+}

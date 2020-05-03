@@ -53,7 +53,7 @@ There are more examples of [configuring exceptions](https://package.elm-lang.org
 
 This rule will report any deviation from camelCase or PascalCase (as appropriate). Read the notes below and make sure that you and your team are 100% happy to adopt this for your codebase!
 
-Here are a few notes about the provided convertors:
+Here are a few notes about the provided converters:
 
   - A single underscore at the end of a token is allowed (used for masking variables), but multiple trailing underscores will be squashed.
       - Pass: `model_`
@@ -70,7 +70,7 @@ Here are a few notes about the provided convertors:
       - Fail: `address1line` => `address1Line` (see the `L`)
       - Fail: `one_two3four_five` => `oneTwo3FourFive`
   - "Unknown" suggestion.
-    If the convertor fails to parse a term it will suggest "Unknown" as the replacement. If you encounter this please [report an issue on GitHub](https://github.com/sparksp/elm-review-camelcase/issues) so we can take a look!
+    If the converter fails to parse a term it will suggest "Unknown" as the replacement. If you encounter this please [report an issue on GitHub](https://github.com/sparksp/elm-review-camelcase/issues) so we can take a look!
 
 -}
 rule : List Option -> Rule
@@ -108,7 +108,7 @@ type Option
     | ToPascal (String -> Case Pascal)
 
 
-{-| Custom case convertors must return the string wrapped in a `Case` of the correct type. You can easily wrap another library like this:
+{-| Custom case converters must return the string wrapped in a `Case` of the correct type. You can easily wrap another library like this:
 
     import ReCase
     import UseCamelCase

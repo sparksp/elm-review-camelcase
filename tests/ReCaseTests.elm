@@ -86,6 +86,10 @@ singleLetterWordTests =
             \_ ->
                 toCamel "toHTML"
                     |> Expect.equal (Ok "toHTML")
+        , test "HTML" <|
+            \_ ->
+                toPascal "HTML"
+                    |> Expect.equal (Ok "HTML")
         ]
 
 

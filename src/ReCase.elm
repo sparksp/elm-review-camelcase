@@ -74,34 +74,49 @@ toTitleCase string =
 --- PARSERS
 
 
-getPascalCase : Parser String
-getPascalCase =
-    Parser.oneOf
-        [ Parser.backtrackable <| Parser.loop [] (stepPascalCase snakeCaseWord)
-        , Parser.loop [] (stepPascalCase word)
-        ]
-        |> Parser.map String.concat
+getSnakeCase : Parser String
+getSnakeCase =
+    Parser.loop "" stepSnakeCase
 
 
-stepPascalCase : Parser String -> List String -> Parser (Parser.Step (List String) (List String))
-stepPascalCase string words =
+stepSnakeCase : String -> Parser (Parser.Step String String)
+stepSnakeCase words =
     Parser.succeed (collectTitleCaseWords words)
         |= Parser.oneOf
             [ Parser.succeed Just
-                |= string
+                |= snakeCaseWord { allowEnd = words /= "" }
             , Parser.succeed Nothing
                 |. Parser.end
             ]
 
 
-collectTitleCaseWords : List String -> Maybe String -> Parser.Step (List String) (List String)
+getPascalCase : Parser String
+getPascalCase =
+    Parser.oneOf
+        [ Parser.backtrackable getSnakeCase
+        , Parser.loop "" stepPascalCase
+        ]
+
+
+stepPascalCase : String -> Parser (Parser.Step String String)
+stepPascalCase words =
+    Parser.succeed (collectTitleCaseWords words)
+        |= Parser.oneOf
+            [ Parser.succeed Just
+                |= word
+            , Parser.succeed Nothing
+                |. Parser.end
+            ]
+
+
+collectTitleCaseWords : String -> Maybe String -> Parser.Step String String
 collectTitleCaseWords words maybeString =
     case maybeString of
         Just string ->
-            Parser.Loop (toTitleCase string :: words)
+            Parser.Loop (words ++ toTitleCase string)
 
         Nothing ->
-            Parser.Done (List.reverse words)
+            Parser.Done words
 
 
 {-| A word either Title or lower.
@@ -143,29 +158,33 @@ word =
         ]
 
 
-{-| A word in snake or constant case.of
+{-| A word in snake or constant case.
 
-    Must be either UPPER_ or lower_, a trailing underscore is required but will be removed.
+Must be either UPPER\_, lower\_, or digits\_. A trailing underscore is required but will be removed.
+
+Use `allowEnd = False` for the first word, which must not be the last word.
 
 -}
-snakeCaseWord : Parser String
-snakeCaseWord =
+snakeCaseWord : { allowEnd : Bool } -> Parser String
+snakeCaseWord { allowEnd } =
+    let
+        ending =
+            [ ( Parser.symbol "_", True )
+            , ( Parser.end, allowEnd )
+            ]
+                |> List.filter Tuple.second
+                |> List.map Tuple.first
+    in
     Parser.succeed identity
         |= Parser.oneOf
             [ upperCaseToken
             , lowerCaseToken
             , numberToken
             ]
-        |. Parser.oneOf
-            [ Parser.symbol "_"
-            , Parser.end
-            ]
+        |. Parser.oneOf ending
 
 
-{-| Upper case char followed by all lower case, and optionally trailing digits.
-
-    E.g., "Hello" or "Hello53"
-
+{-| Upper case char followed by all lower case, and optionally trailing digits. E.g., "Hello" or "Hello53"
 -}
 titleCaseToken : Parser String
 titleCaseToken =
@@ -187,10 +206,7 @@ upperCaseToken =
             |. Parser.chompWhile Char.isDigit
 
 
-{-| Lower case char followed by all lower case, and optionally trailing digits.
-
-    E.g., "hello" or "hello53"
-
+{-| Lower case char followed by all lower case, and optionally trailing digits. E.g., "hello" or "hello53"
 -}
 lowerCaseToken : Parser String
 lowerCaseToken =

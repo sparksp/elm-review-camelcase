@@ -40,7 +40,6 @@ a = 1"""
                     |> Review.Test.expectErrors
                         [ typeNameError "Integer_Number" "IntegerNumber"
                         , typeNameError "SMALL_INTEGER" "SmallInteger"
-                        , typeNameError "FLOATER" "Floater"
                         ]
         , test "should report when custom type generics are not camelCase and hint the correct name" <|
             \_ ->
@@ -388,14 +387,13 @@ a = 1"""
                     |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ moduleError "Add_One" "AddOne" ]
-        , test "should report when modules are all CAPITALS and hint the PascalCase name" <|
+        , test "does not report when modules are one word in all CAPITALS" <|
             \_ ->
                 """
 module HTML exposing (..)
 a = 1"""
                     |> Review.Test.run (rule [])
-                    |> Review.Test.expectErrors
-                        [ moduleError "HTML" "Html" ]
+                    |> Review.Test.expectNoErrors
         , test "should report when parent module is not PascalCase and hint the correct name" <|
             \_ ->
                 """
@@ -493,7 +491,6 @@ a = 1"""
                         [ typeNameError "User_Name" "UserName"
                         , typeNameError "User_email" "UserEmail"
                         , typeNameError "USER_PHONE" "UserPhone"
-                        , typeNameError "USERNAME" "Username"
                         ]
         ]
 

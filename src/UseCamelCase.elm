@@ -69,6 +69,8 @@ Here are a few notes about the provided convertors:
       - Pass: `person1`
       - Fail: `address1line` => `address1Line` (see the `L`)
       - Fail: `one_two3four_five` => `oneTwo3FourFive`
+  - "Unknown" suggestion.
+    If the convertor fails to parse a term it will suggest "Unknown" as the replacement. If you encounter this please [report an issue on GitHub](https://github.com/sparksp/elm-review-camelcase/issues) so we can take a look!
 
 -}
 rule : List Option -> Rule
@@ -435,14 +437,14 @@ moduleNameNode node =
 defaultToCamel : String -> Case Camel
 defaultToCamel string =
     ReCase.toCamel string
-        |> Result.withDefault string
+        |> Result.withDefault "unknown"
         |> Case
 
 
 defaultToPascal : String -> Case Pascal
 defaultToPascal string =
     ReCase.toPascal string
-        |> Result.withDefault string
+        |> Result.withDefault "Unknown"
         |> Case
 
 

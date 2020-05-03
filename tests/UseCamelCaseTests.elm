@@ -17,7 +17,7 @@ a =
         Some camelValue any_value ->
             1
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ variableError "any_value" "anyValue"
                         ]
@@ -36,7 +36,7 @@ type Integer_Number = Whole Int
 type SMALL_INTEGER = Small Int
 type FLOATER = Float Int Int
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ typeNameError "Integer_Number" "IntegerNumber"
                         , typeNameError "SMALL_INTEGER" "SmallInteger"
@@ -48,7 +48,7 @@ a = 1"""
 module A exposing (..)
 type Foo camelType sub_type = Foo String
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ genericError "sub_type" "subType"
                         ]
@@ -64,7 +64,7 @@ testCustomTypeVariants =
 module MenuState exposing (..)
 type MenuState = PascalState | Open_State | Closed_State
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ typeVariantError "Open_State" "OpenState"
                         , typeVariantError "Closed_State" "ClosedState"
@@ -75,7 +75,7 @@ a = 1"""
 module A exposing (..)
 type Foo = Bar { camelName : String, first_name : String, last_name : String }
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ recordKeyError "first_name" "firstName"
                         , recordKeyError "last_name" "lastName"
@@ -91,7 +91,7 @@ testFunctionArgumentNames =
                 """
 module A exposing (..)
 addOne camelNumber to_number = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ argumentError "to_number" "toNumber"
                         ]
@@ -102,7 +102,7 @@ addOne camelNumber to_number = 1"""
 module A exposing (..)
 fullname { camelName, snake_name } = ""
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectNoErrors
         , test "should report when tuple arguments are not camelCase and hint the correct name" <|
             \_ ->
@@ -110,7 +110,7 @@ fullname { camelName, snake_name } = ""
 module A exposing (..)
 fullname ( camelName, last_name ) = ""
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ argumentError "last_name" "lastName"
                         ]
@@ -120,7 +120,7 @@ fullname ( camelName, last_name ) = ""
 module A exposing (..)
 fullname (Person camelName last_name) = ""
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ argumentError "last_name" "lastName"
                         ]
@@ -130,7 +130,7 @@ fullname (Person camelName last_name) = ""
 module A exposing (..)
 fullname ((Person inner_person) as outer_person) ((Person innerCamelPerson) as outerCamelPerson) = ""
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ argumentError "inner_person" "innerPerson"
                         , aliasError "outer_person" "outerPerson"
@@ -147,7 +147,7 @@ testFunctionNames =
 module A exposing (..)
 addOne = 1
 add_two n = n + 2"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ functionError "add_two" "addTwo"
                         ]
@@ -157,7 +157,7 @@ add_two n = n + 2"""
 module A exposing (..)
 addOne = 1
 addOne_ n = n + 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectNoErrors
         ]
 
@@ -172,7 +172,7 @@ module A exposing (..)
 a : { camelName : String, first_name : String, class_name : String } -> String
 a = ""
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ recordKeyError "first_name" "firstName"
                         , recordKeyError "class_name" "className"
@@ -184,7 +184,7 @@ module A exposing (..)
 a : { any_record | camelName : String, first_name : String } -> { camelRecord | class_name : String } -> String
 a = ""
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ genericError "any_record" "anyRecord"
                         , recordKeyError "first_name" "firstName"
@@ -196,7 +196,7 @@ a = ""
 module A exposing (..)
 a : camelType -> any_value -> Int
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ genericError "any_value" "anyValue"
                         ]
@@ -206,7 +206,7 @@ a = 1"""
 module A exposing (..)
 a : Maybe (camelType -> any_value -> Int) -> Int
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ genericError "any_value" "anyValue"
                         ]
@@ -216,7 +216,7 @@ a = 1"""
 module A exposing (..)
 a : ( camelValue, any_value, { first_name : String } ) -> Int
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ genericError "any_value" "anyValue"
                         , recordKeyError "first_name" "firstName"
@@ -234,7 +234,7 @@ testImportAliasNames =
 module A exposing (..)
 import Maths.Add_One
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectNoErrors
         , test "should not report when imported module is not PascalCase but the alias is" <|
             -- imported module name should be detected were it is declared
@@ -243,7 +243,7 @@ a = 1"""
 module A exposing (..)
 import Maths.Add_One as AddOne
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectNoErrors
         , test "should report when import name is not PascalCase and hint the correct name" <|
             \_ ->
@@ -251,7 +251,7 @@ a = 1"""
 module A exposing (..)
 import Maths.AddOne as Add_One
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ importAliasError "Add_One" "AddOne" ]
         ]
@@ -267,7 +267,7 @@ module A exposing (..)
 a =
     List.map (\\first_name camelName -> 1) list
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ argumentError "first_name" "firstName" ]
         ]
@@ -288,7 +288,7 @@ age =
     in
     1
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ functionError "person_age" "personAge"
                         , functionError "person_name" "personName"
@@ -304,7 +304,7 @@ age =
     in
     1
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectNoErrors
         , test "should report when tuple names are not camelCase and hint the correct name" <|
             \_ ->
@@ -316,7 +316,7 @@ age =
     in
     1
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ variableError "person_age" "personAge"
                         ]
@@ -331,7 +331,7 @@ age =
     in
     1
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ variableError "person_age" "personAge"
                         , variableError "other_ages" "otherAges"
@@ -346,7 +346,7 @@ age =
     in
     1
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ variableError "person_age" "personAge"
                         , variableError "person_name" "personName"
@@ -362,7 +362,7 @@ age =
     in
     1
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ genericError "any_type" "anyType"
                         , argumentError "some_thing" "someThing"
@@ -378,14 +378,14 @@ testModuleNames =
                 """
 module AddOne exposing (..)
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectNoErrors
         , test "should report when module names include _ and hint the PascalCase name" <|
             \_ ->
                 """
 module Add_One exposing (..)
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ moduleError "Add_One" "AddOne" ]
         , test "should report when modules are all CAPITALS and hint the PascalCase name" <|
@@ -393,7 +393,7 @@ a = 1"""
                 """
 module HTML exposing (..)
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ moduleError "HTML" "Html" ]
         , test "should report when parent module is not PascalCase and hint the correct name" <|
@@ -401,7 +401,7 @@ a = 1"""
                 """
 module Add_One.Int exposing (..)
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ moduleError "Add_One.Int" "AddOne.Int" ]
         , test "should report when submodule is not PascalCase and hint the correct name" <|
@@ -409,7 +409,7 @@ a = 1"""
                 """
 module Maths.Add_One exposing (..)
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ moduleError "Maths.Add_One" "Maths.AddOne" ]
         ]
@@ -427,7 +427,7 @@ port recv_data : (String -> msg) -> Sub msg
 port playMusic : String -> Cmd msg
 port getFile : (String -> msg) -> Sub msg
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ portError "send_data" "sendData"
                         , portError "recv_data" "recvData"
@@ -448,7 +448,7 @@ type alias User =
     , camelKey : String
     }
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ recordKeyError "date_of_birth" "dateOfBirth"
                         , recordKeyError "company_name" "companyName"
@@ -466,7 +466,7 @@ type alias User =
         }
     }
 """
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ recordKeyError "address_line_1" "addressLine1"
                         , recordKeyError "address_line_2" "addressLine2"
@@ -488,12 +488,52 @@ type alias User_email = String
 type alias USER_PHONE = String
 type alias USERNAME = String
 a = 1"""
-                    |> Review.Test.run rule
+                    |> Review.Test.run (rule [])
                     |> Review.Test.expectErrors
                         [ typeNameError "User_Name" "UserName"
                         , typeNameError "User_email" "UserEmail"
                         , typeNameError "USER_PHONE" "UserPhone"
                         , typeNameError "USERNAME" "Username"
+                        ]
+        ]
+
+
+testOptions : Test
+testOptions =
+    describe "options"
+        [ test "it uses custom convertors" <|
+            \_ ->
+                let
+                    toCamelBar : String -> UseCamelCase.Case UseCamelCase.Camel
+                    toCamelBar string =
+                        UseCamelCase.Case <|
+                            if string == "foo" then
+                                "bar"
+
+                            else
+                                string
+
+                    toPascalBar : String -> UseCamelCase.Case UseCamelCase.Pascal
+                    toPascalBar string =
+                        UseCamelCase.Case <|
+                            if string == "Foo" then
+                                "Bar"
+
+                            else
+                                string
+                in
+                """
+module Foo.Fee exposing (..)
+foo fee = 1"""
+                    |> Review.Test.run
+                        (rule
+                            [ UseCamelCase.ToCamel toCamelBar
+                            , UseCamelCase.ToPascal toPascalBar
+                            ]
+                        )
+                    |> Review.Test.expectErrors
+                        [ moduleError "Foo.Fee" "Bar.Fee"
+                        , functionError "foo" "bar"
                         ]
         ]
 
@@ -514,6 +554,9 @@ all =
         , testPortNames
         , testRecordKeysInTypeAliases
         , testTypeAliasNames
+
+        -- Config
+        , testOptions
         ]
 
 

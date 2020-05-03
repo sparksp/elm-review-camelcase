@@ -1,6 +1,7 @@
 module UseCamelCase exposing
     ( rule
-    , Option(..), Case(..), Camel, Pascal
+    , Camel, Pascal
+    , Option(..), Case(..)
     )
 
 {-|
@@ -8,9 +9,19 @@ module UseCamelCase exposing
 @docs rule
 
 
+## Implementation Notes
+
+@docs Camel, Pascal
+
+
+### Unknown suggestion
+
+If the converter fails to parse a term it will suggest "Unknown" as the replacement. We're confident that this will not happen, so if you encounter this please [report an issue on GitHub](https://github.com/sparksp/elm-review-camelcase/issues) so we can take a look.
+
+
 ## Configuration
 
-@docs Option, Case, Camel, Pascal
+@docs Option, Case
 
 -}
 
@@ -36,40 +47,9 @@ import Review.Rule as Rule exposing (Error, Rule)
         ]
 
 
-## Ignoring specific files
+### When (not) to use this rule
 
-You can ignore the errors reported for specific file paths. Use it when you don't want to review generated source code or files from external sources that you copied over to your project and don't want to be touched.
-
-    config : List Rule
-    config =
-        [ UseCamelCase.rule []
-            |> Rule.ignoreErrorsForFiles [ "src/TW.elm" ]
-        ]
-
-There are more examples of [configuring exceptions](https://package.elm-lang.org/packages/jfmengels/elm-review/2.0.0/Review-Rule#configuring-exceptions) in the elm-review documentation.
-
-
-## When (not) to use this rule
-
-This rule will report any deviation from camelCase or PascalCase (as appropriate). Read the notes below and make sure that you and your team are 100% happy to adopt this for your codebase!
-
-Here are a few notes about the provided converters:
-
-  - A single underscore at the end of a token is allowed (used for masking variables), but multiple trailing underscores will be squashed.
-      - Pass: `model_`
-      - Fail: `model___` => `model_`
-  - Single letter words and abbreviations are accepted.
-      - Pass: `hasAThing`
-      - Pass: `toHTML` (camelCase)
-      - Pass: `ToHTML` (PascalCase)
-  - We hint CONSTANT\_CASE parts as whole words.
-      - Fail: `CONSTANT_CASE` => `ConstantCase`
-      - Fail: `TO_HTML` => `ToHtml`
-  - We consider any numbers to be the end of a word.
-      - Pass: `person1`
-      - Fail: `address1line` => `address1Line` (see the `L`)
-      - Fail: `one_two3four_five` => `oneTwo3FourFive`
-  - If the converter fails to parse a term it will suggest "Unknown" as the replacement. If you encounter this please [report an issue on GitHub](https://github.com/sparksp/elm-review-camelcase/issues) so we can take a look!
+This rule will report any deviation from [camelCase](#Camel) or [PascalCase](#Pascal) (as appropriate). Read the notes below and make sure that you and your team are 100% happy to adopt this for your codebase!
 
 -}
 rule : List Option -> Rule
@@ -87,11 +67,48 @@ rule options =
         |> Rule.fromModuleRuleSchema
 
 
+{-| Variable and constant names must be formatted in **camelCase**, such that each word in the middle of the phrase begins with a capital letter, with no intervening spaces or punctuation. This includes all variables, function names and arguments, and port names.
 
---- Configuration
+Here are a few notes about the provided implementation:
+
+  - A single underscore at the end of a token is allowed (used for masking variables), but multiple trailing underscores will be squashed.
+      - Pass: `model_`
+      - Fail: `model___` => `model_`
+  - Single-letter words and abbreviations are accepted.
+      - Pass: `hasAThing`
+      - Pass: `toHTML`
+  - We consider any numbers to be the end of a word.
+      - Pass: `person1`
+      - Fail: `address_1stLine` => `address1StLine` (note the `St`)
+      - Fail: `one_two3four_five` => `oneTwo3FourFive` (note the `Four`)
+
+-}
+type Camel
+    = Camel
 
 
-{-| If you do not like the provided case rules you can provide your own:
+{-| Module and type names must be formatted in **PascalCase**, such that each word of the phrase begins with a capital letter, with no intervening spaces or punctuation.
+
+Here are a few notes about the provided implementation:
+
+  - Single-letter words and abbreviations are accepted.
+      - Pass: `HasAThing`
+      - Pass: `ToHTML`
+  - We take CONSTANT\_CASE parts as whole words.
+      - Fail: `CONSTANT_CASE` => `ConstantCase`
+      - Fail: `TO_HTML` => `ToHtml`
+  - We consider any numbers to be the end of a word.
+      - Pass: `Person1`
+      - Fail: `Person_1` => `Person1`
+      - Fail: `Address_1stLine` => `Address1StLine` (note the `St`)
+      - Fail: `One_Two3four_Five` => `OneTwo3FourFive` (note the `Four`)
+
+-}
+type Pascal
+    = Pascal
+
+
+{-| If you do not like the provided case rules you can supply your own.
 
     config : List Rule
     config =
@@ -101,42 +118,55 @@ rule options =
             ]
         ]
 
+Custom case converters must return the string wrapped in a [Case](#Case) of the correct type. You can easily wrap another library like this:
+
+    import ReCase
+    import UseCamelCase exposing (Case)
+
+    customToCamel : String -> Case UseCamelCase.Camel
+    customToCamel string =
+        Case (ReCase.recase ReCase.ToCamel string)
+
+    customToPascal : String -> Case UseCamelCase.Pascal
+    customToPascal string =
+        Case (ReCase.recase ReCase.ToPascal string)
+
+
+### Ignoring specific files
+
+You can ignore the errors reported for specific files. Use this when you don't want to review generated source code or files from external sources that you copied over to your project and don't want to be touched.
+
+    config : List Rule
+    config =
+        [ UseCamelCase.rule []
+            |> Rule.ignoreErrorsForFiles [ "src/TW.elm" ]
+        ]
+
+There are more examples of [configuring exceptions](https://package.elm-lang.org/packages/jfmengels/elm-review/2.0.0/Review-Rule#configuring-exceptions) in the elm-review documentation.
+
 -}
 type Option
     = ToCamel (String -> Case Camel)
     | ToPascal (String -> Case Pascal)
 
 
-{-| Custom case converters must return the string wrapped in a `Case` of the correct type. You can easily wrap another library like this:
+{-| Represents a string of the given case.
 
-    import ReCase
-    import UseCamelCase
+    camelCase : Case Camel
+    camelCase =
+        Case "aCamelCaseString"
 
-    customToCamel : String -> UseCamelCase.Case UseCamelCase.Camel
-    customToCamel string =
-        ReCase.recase ReCase.ToCamel string
-            |> UseCamelCase.Case
-
-    customToPascal : String -> UseCamelCase.Case UseCamelCase.Pascal
-    customToPascal string =
-        ReCase.recase ReCase.ToPascal string
-            |> UseCamelCase.Case
+    pascalCase : Case Pascal
+    pascalCase =
+        Case "APascalCaseString"
 
 -}
 type Case c
     = Case String
 
 
-{-| In Elm, variables and constants should be formatted in camelCase.
--}
-type Camel
-    = Camel
 
-
-{-| In Elm, module and type names should be formatted in PascalCase.
--}
-type Pascal
-    = Pascal
+--- IMPLEMENTATION
 
 
 type ToCase c

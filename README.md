@@ -1,4 +1,4 @@
-# review-case
+# review-camelcase
 
 ![Elm Checks](https://github.com/sparksp/elm-review-camelcase/workflows/Elm%20Checks/badge.svg)
 

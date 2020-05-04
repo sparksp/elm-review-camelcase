@@ -86,6 +86,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/cache@v1
+        id: npm-cache
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - uses: actions/cache@v1
+        id: elm-cache
+        with:
+          path: ~/.elm
+          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
       - name: Run elm-analyse
         uses: harehare/elm-analyse-action@v1
 

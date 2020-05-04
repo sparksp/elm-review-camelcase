@@ -84,7 +84,7 @@ stepSnakeCase words =
     Parser.succeed (collectTitleCaseWords words)
         |= Parser.oneOf
             [ Parser.succeed Just
-                |= snakeCaseWord { allowEnd = words /= "" }
+                |= snakeCaseWord (AllowEnd <| words /= "")
             , Parser.succeed Nothing
                 |. Parser.end
             ]
@@ -162,11 +162,11 @@ word =
 
 Must be either UPPER\_, lower\_, or digits\_. A trailing underscore is required but will be removed.
 
-Use `allowEnd = False` for the first word, which must not be the last word.
+Use `AllowEnd False` for the first word, which must not be the last word.
 
 -}
-snakeCaseWord : { allowEnd : Bool } -> Parser String
-snakeCaseWord { allowEnd } =
+snakeCaseWord : AllowEnd -> Parser String
+snakeCaseWord (AllowEnd allowEnd) =
     let
         ending =
             [ ( Parser.symbol "_", True )
@@ -182,6 +182,12 @@ snakeCaseWord { allowEnd } =
             , numberToken
             ]
         |. Parser.oneOf ending
+
+
+{-| Used to indicate whether this can be the end of a snakeCaseWord.
+-}
+type AllowEnd
+    = AllowEnd Bool
 
 
 {-| Upper case char followed by all lower case, and optionally trailing digits. E.g., "Hello" or "Hello53"

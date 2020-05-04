@@ -19,6 +19,7 @@ import NoUnused.Exports
 import NoUnused.Modules
 import NoUnused.Variables
 import Review.Rule exposing (Rule)
+import UseCamelCase
 
 
 config : List Rule
@@ -30,4 +31,5 @@ config =
     , NoUnused.Exports.rule
     , NoUnused.Modules.rule
     , NoUnused.Variables.rule
+    , UseCamelCase.rule UseCamelCase.default
     ]

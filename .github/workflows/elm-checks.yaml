@@ -178,7 +178,7 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Add yarn bin to path
         run: echo ::add-path::$(yarn bin)
-      # - name: Publish package
-      #   uses: dillonkearns/elm-publish-action@1.0.1
-      #   with:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish package
+        uses: dillonkearns/elm-publish-action@1.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

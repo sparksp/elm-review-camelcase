@@ -30,5 +30,3 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: harehare/elm-analyse-action@v1
-        with:
-          ignore_error: true

@@ -1,32 +1,77 @@
-name: Elm Checks
+name: Tests
 on:
   pull_request:
   push:
     branches: [master]
 
 jobs:
-  build:
+  elm-test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 12.x
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Add yarn bin to path
         run: echo ::add-path::$(yarn bin)
       - name: Run elm-test
         run: elm-test
-      - name: Run elm-review
-        run: elm-review
+
+  elm-format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Add yarn bin to path
+        run: echo ::add-path::$(yarn bin)
       - name: Run elm-format
         uses: sparksp/elm-format-action@v1
+
+  elm-review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Add yarn bin to path
+        run: echo ::add-path::$(yarn bin)
+      - name: Run elm-review
+        run: elm-review
 
   elm-analyse:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-      - uses: harehare/elm-analyse-action@v1
+      - name: Run elm-analyse
+        uses: harehare/elm-analyse-action@v1
+
+  elm-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Add yarn bin to path
+        run: echo ::add-path::$(yarn bin)
+      - name: Build elm docs
+        run: elm make --docs docs.json
+
+  elm-publish:
+    needs: [elm-test, elm-format, elm-review, elm-analyse, elm-docs]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Add yarn bin to path
+        run: echo ::add-path::$(yarn bin)
+      - name: Publish package
+        uses: dillonkearns/elm-publish-action@1.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

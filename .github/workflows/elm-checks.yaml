@@ -94,7 +94,7 @@ jobs:
       - name: Run elm-analyse
         uses: harehare/elm-analyse-action@v1
 
-  elm-docs:
+  elm-build-docs:
     runs-on: ubuntu-latest
 
     steps:
@@ -122,7 +122,7 @@ jobs:
         run: elm make --docs docs.json
 
   elm-publish:
-    needs: [elm-test, elm-format, elm-review, elm-analyse, elm-docs]
+    needs: [elm-test, elm-format, elm-review, elm-analyse, elm-build-docs]
     runs-on: ubuntu-latest
 
     steps:

@@ -556,132 +556,132 @@ all =
 
 
 aliasError : String -> String -> Review.Test.ExpectedError
-aliasError snake_case camelCase =
+aliasError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` alias." ]
+        { message = String.concat [ "Wrong case style for `", name, "` alias." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All aliases must be named using the camelCase style.  For this alias that would be `", camelCase, "`." ]
+            , String.concat [ "All aliases must be named using the camelCase style.  For this alias that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 argumentError : String -> String -> Review.Test.ExpectedError
-argumentError snake_case camelCase =
+argumentError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` argument." ]
+        { message = String.concat [ "Wrong case style for `", name, "` argument." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All arguments must be named using the camelCase style.  For this argument that would be `", camelCase, "`." ]
+            , String.concat [ "All arguments must be named using the camelCase style.  For this argument that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 functionError : String -> String -> Review.Test.ExpectedError
-functionError snake_case camelCase =
+functionError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` function." ]
+        { message = String.concat [ "Wrong case style for `", name, "` function." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All functions must be named using the camelCase style.  For this function that would be `", camelCase, "`." ]
+            , String.concat [ "All functions must be named using the camelCase style.  For this function that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 genericError : String -> String -> Review.Test.ExpectedError
-genericError snake_case camelCase =
+genericError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` generic." ]
+        { message = String.concat [ "Wrong case style for `", name, "` generic." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All generics must be named using the camelCase style.  For this generic that would be `", camelCase, "`." ]
+            , String.concat [ "All generics must be named using the camelCase style.  For this generic that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 importAliasError : String -> String -> Review.Test.ExpectedError
-importAliasError snake_case pascalCase =
+importAliasError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` import." ]
+        { message = String.concat [ "Wrong case style for `", name, "` import." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All modules must be named using the PascalCase style.  For this import that would be `", pascalCase, "`." ]
+            , String.concat [ "All modules must be named using the PascalCase style.  For this import that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 moduleError : String -> String -> Review.Test.ExpectedError
-moduleError snake_case pascalCase =
+moduleError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` module." ]
+        { message = String.concat [ "Wrong case style for `", name, "` module." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All modules must be named using the PascalCase style.  For this module that would be `", pascalCase, "`." ]
+            , String.concat [ "All modules must be named using the PascalCase style.  For this module that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 portError : String -> String -> Review.Test.ExpectedError
-portError snake_case camelCase =
+portError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` port." ]
+        { message = String.concat [ "Wrong case style for `", name, "` port." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All ports must be named using the camelCase style.  For this port that would be `", camelCase, "`." ]
+            , String.concat [ "All ports must be named using the camelCase style.  For this port that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 recordKeyError : String -> String -> Review.Test.ExpectedError
-recordKeyError snake_case camelCase =
+recordKeyError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` key." ]
+        { message = String.concat [ "Wrong case style for `", name, "` key." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All keys must be named using the camelCase style.  For this key that would be `", camelCase, "`." ]
+            , String.concat [ "All keys must be named using the camelCase style.  For this key that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 typeNameError : String -> String -> Review.Test.ExpectedError
-typeNameError snake_case pascalCase =
+typeNameError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` type." ]
+        { message = String.concat [ "Wrong case style for `", name, "` type." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All types must be named using the PascalCase style.  For this type that would be `", pascalCase, "`." ]
+            , String.concat [ "All types must be named using the PascalCase style.  For this type that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 typeVariantError : String -> String -> Review.Test.ExpectedError
-typeVariantError snake_case pascalCase =
+typeVariantError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` variant." ]
+        { message = String.concat [ "Wrong case style for `", name, "` variant." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All variants must be named using the PascalCase style.  For this variant that would be `", pascalCase, "`." ]
+            , String.concat [ "All variants must be named using the PascalCase style.  For this variant that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }
 
 
 variableError : String -> String -> Review.Test.ExpectedError
-variableError snake_case camelCase =
+variableError name hint =
     Review.Test.error
-        { message = String.concat [ "Wrong case style for `", snake_case, "` variable." ]
+        { message = String.concat [ "Wrong case style for `", name, "` variable." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
-            , String.concat [ "All variables must be named using the camelCase style.  For this variable that would be `", camelCase, "`." ]
+            , String.concat [ "All variables must be named using the camelCase style.  For this variable that would be `", hint, "`." ]
             ]
-        , under = snake_case
+        , under = name
         }

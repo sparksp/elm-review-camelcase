@@ -47,11 +47,6 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-      - uses: actions/cache@v1
-        id: elm-cache
-        with:
-          path: ~/.elm
-          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Add yarn bin to path

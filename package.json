@@ -1,6 +1,6 @@
 {
   "name": "elm-review-camelcase",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "elm-review rule to ensure your code uses camelCase",
   "repository": "https://github.com/sparksp/elm-review-camelcase",
   "author": "Phill Sparks <me@phills.me.uk>",

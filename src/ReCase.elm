@@ -76,29 +76,38 @@ toTitleCase string =
 
 getSnakeCase : Parser String
 getSnakeCase =
-    Parser.loop "" stepSnakeCase
+    Parser.loop [] stepSnakeCase
 
 
-stepSnakeCase : String -> Parser (Parser.Step String String)
+stepSnakeCase : List String -> Parser (Parser.Step (List String) String)
 stepSnakeCase words =
-    Parser.succeed (collectTitleCaseWords words)
-        |= Parser.oneOf
-            [ Parser.succeed Just
-                |= snakeCaseWord (AllowEnd <| words /= "")
-            , Parser.succeed Nothing
-                |. Parser.end
-            ]
+    case words of
+        [] ->
+            Parser.succeed (Just >> collectTitleCaseWords words)
+                |= snakeCaseWord
+
+        _ :: [] ->
+            Parser.succeed (collectTitleCaseWords words)
+                |= subsequentSnakeCaseWord
+
+        _ ->
+            Parser.succeed (collectTitleCaseWords words)
+                |= Parser.oneOf
+                    [ subsequentSnakeCaseWord
+                    , Parser.succeed Nothing
+                        |. Parser.end
+                    ]
 
 
 getPascalCase : Parser String
 getPascalCase =
     Parser.oneOf
         [ Parser.backtrackable getSnakeCase
-        , Parser.loop "" stepPascalCase
+        , Parser.loop [] stepPascalCase
         ]
 
 
-stepPascalCase : String -> Parser (Parser.Step String String)
+stepPascalCase : List String -> Parser (Parser.Step (List String) String)
 stepPascalCase words =
     Parser.succeed (collectTitleCaseWords words)
         |= Parser.oneOf
@@ -109,14 +118,14 @@ stepPascalCase words =
             ]
 
 
-collectTitleCaseWords : String -> Maybe String -> Parser.Step String String
+collectTitleCaseWords : List String -> Maybe String -> Parser.Step (List String) String
 collectTitleCaseWords words maybeString =
     case maybeString of
         Just string ->
-            Parser.Loop (words ++ toTitleCase string)
+            Parser.Loop (toTitleCase string :: words)
 
         Nothing ->
-            Parser.Done words
+            Parser.Done (words |> List.reverse |> String.join "")
 
 
 {-| A word either Title or lower.
@@ -160,34 +169,33 @@ word =
 
 {-| A word in snake or constant case.
 
-Must be either UPPER\_, lower\_, or digits\_. A trailing underscore is required but will be removed.
-
-Use `AllowEnd False` for the first word, which must not be the last word.
+Must be either UPPER, lower, or digits. A trailing underscore is required but will be removed.
 
 -}
-snakeCaseWord : AllowEnd -> Parser String
-snakeCaseWord (AllowEnd allowEnd) =
-    let
-        ending =
-            [ ( Parser.symbol "_", True )
-            , ( Parser.end, allowEnd )
-            ]
-                |> List.filter Tuple.second
-                |> List.map Tuple.first
-    in
+snakeCaseWord : Parser String
+snakeCaseWord =
     Parser.succeed identity
         |= Parser.oneOf
             [ upperCaseToken
             , lowerCaseToken
             , numberToken
             ]
-        |. Parser.oneOf ending
 
 
-{-| Used to indicate whether this can be the end of a snakeCaseWord.
+{-| Another word in snake or constant case, starts with "\_".
+
+If the stream ends immediately after "\_" then return `Just "_"`.
+
 -}
-type AllowEnd
-    = AllowEnd Bool
+subsequentSnakeCaseWord : Parser (Maybe String)
+subsequentSnakeCaseWord =
+    Parser.succeed Just
+        |. Parser.symbol "_"
+        |= Parser.oneOf
+            [ Parser.succeed "_"
+                |. Parser.end
+            , snakeCaseWord
+            ]
 
 
 {-| Upper case char followed by all lower case, and optionally trailing digits. E.g., "Hello" or "Hello53"

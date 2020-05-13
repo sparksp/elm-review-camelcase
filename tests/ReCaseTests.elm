@@ -60,6 +60,10 @@ elmTests =
             \_ ->
                 toCamel "a"
                     |> Expect.equal (Ok "a")
+        , test "Trailing underscore (single word)" <|
+            \_ ->
+                toCamel "model_"
+                    |> Expect.equal (Ok "model_")
         , test "Trailing underscore" <|
             \_ ->
                 toCamel "addOne_"

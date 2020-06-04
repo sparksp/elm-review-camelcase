@@ -223,8 +223,8 @@ declarationVisitor ((Config { toCamel, toPascal }) as config) node =
 
         Declaration.CustomTypeDeclaration { name, generics, constructors } ->
             checkString typeError toPascal name
-                ++ List.concatMap (checkString genericError toCamel) generics
-                ++ List.concatMap (checkValueConstructor config) constructors
+                ++ fastConcatMap (checkString genericError toCamel) generics
+                ++ fastConcatMap (checkValueConstructor config) constructors
 
         Declaration.FunctionDeclaration function ->
             checkFunction toCamel function
@@ -244,13 +244,13 @@ expressionVisitor : Config -> Node Expression -> List (Error {})
 expressionVisitor (Config { toCamel }) node =
     case Node.value node of
         Expression.LetExpression { declarations } ->
-            List.concatMap (checkLetDeclaration toCamel) declarations
+            fastConcatMap (checkLetDeclaration toCamel) declarations
 
         Expression.CaseExpression { cases } ->
-            List.concatMap (checkCase toCamel) cases
+            fastConcatMap (checkCase toCamel) cases
 
         Expression.LambdaExpression { args } ->
-            List.concatMap (checkPattern argumentError toCamel) args
+            fastConcatMap (checkPattern argumentError toCamel) args
 
         _ ->
             []
@@ -280,7 +280,7 @@ checkSignature toCamel node =
 checkValueConstructor : Config -> Node Type.ValueConstructor -> List (Error {})
 checkValueConstructor (Config { toCamel, toPascal }) node =
     checkString typeVariantError toPascal (node |> Node.value |> .name)
-        ++ List.concatMap (checkTypeAnnotation toCamel) (node |> Node.value |> .arguments)
+        ++ fastConcatMap (checkTypeAnnotation toCamel) (node |> Node.value |> .arguments)
 
 
 checkTypeAnnotation : ToCase Camel -> Node TypeAnnotation -> List (Error {})
@@ -290,20 +290,20 @@ checkTypeAnnotation toCamel node =
             checkString genericError toCamel (Node.map (\_ -> name) node)
 
         TypeAnnotation.Typed _ list ->
-            List.concatMap (checkTypeAnnotation toCamel) list
+            fastConcatMap (checkTypeAnnotation toCamel) list
 
         TypeAnnotation.Unit ->
             []
 
         TypeAnnotation.Tupled list ->
-            List.concatMap (checkTypeAnnotation toCamel) list
+            fastConcatMap (checkTypeAnnotation toCamel) list
 
         TypeAnnotation.Record recordFields ->
-            List.concatMap (checkRecordField toCamel) recordFields
+            fastConcatMap (checkRecordField toCamel) recordFields
 
         TypeAnnotation.GenericRecord name recordFields ->
             checkString genericError toCamel name
-                ++ List.concatMap (checkRecordField toCamel) (Node.value recordFields)
+                ++ fastConcatMap (checkRecordField toCamel) (Node.value recordFields)
 
         TypeAnnotation.FunctionTypeAnnotation first second ->
             checkTypeAnnotation toCamel first
@@ -333,7 +333,7 @@ checkLetDeclaration toCamel node =
 checkFunction : ToCase Camel -> Expression.Function -> List (Error {})
 checkFunction toCamel { declaration, signature } =
     checkString functionError toCamel (declaration |> Node.value |> .name)
-        ++ List.concatMap (checkPattern argumentError toCamel) (declaration |> Node.value |> .arguments)
+        ++ fastConcatMap (checkPattern argumentError toCamel) (declaration |> Node.value |> .arguments)
         ++ checkMaybeSignature toCamel signature
 
 
@@ -384,7 +384,7 @@ checkPattern makeError toCamel node =
             []
 
         Pattern.TuplePattern tuple ->
-            List.concatMap checkSubPattern tuple
+            fastConcatMap checkSubPattern tuple
 
         Pattern.RecordPattern _ ->
             []
@@ -393,7 +393,7 @@ checkPattern makeError toCamel node =
             checkSubPattern leftPattern ++ checkSubPattern rightPattern
 
         Pattern.ListPattern list ->
-            List.concatMap checkSubPattern list
+            fastConcatMap checkSubPattern list
 
         Pattern.VarPattern name ->
             Node.map (\_ -> name) node
@@ -404,7 +404,7 @@ checkPattern makeError toCamel node =
                 ++ checkSubPattern subPattern
 
         Pattern.NamedPattern _ list ->
-            List.concatMap checkSubPattern list
+            fastConcatMap checkSubPattern list
 
         Pattern.ParenthesizedPattern subPattern ->
             checkSubPattern subPattern
@@ -565,3 +565,12 @@ foldCaseList joiner cases =
     List.map (\(Case c) -> c) cases
         |> joiner
         |> Case
+
+
+
+--- List Performance
+
+
+fastConcatMap : (a -> List b) -> List a -> List b
+fastConcatMap fn =
+    List.foldr (fn >> (++)) []

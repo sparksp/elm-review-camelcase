@@ -202,36 +202,44 @@ subsequentSnakeCaseWord =
 -}
 titleCaseToken : Parser String
 titleCaseToken =
-    Parser.getChompedString (Parser.succeed ())
-        |. Parser.chompIf Char.isUpper
-        |. Parser.chompWhile Char.isLower
-        |. Parser.chompWhile Char.isDigit
+    Parser.getChompedString
+        (Parser.succeed ()
+            |. Parser.chompIf Char.isUpper
+            |. Parser.chompWhile Char.isLower
+            |. Parser.chompWhile Char.isDigit
+        )
 
 
 {-| Upper case char followed by all upper case, and optionally trailing digits.
 -}
 upperCaseToken : Parser String
 upperCaseToken =
-    Parser.getChompedString (Parser.succeed ())
-        |. Parser.chompIf Char.isUpper
-        |. Parser.chompWhile Char.isUpper
-        |. Parser.chompWhile Char.isDigit
+    Parser.getChompedString
+        (Parser.succeed ()
+            |. Parser.chompIf Char.isUpper
+            |. Parser.chompWhile Char.isUpper
+            |. Parser.chompWhile Char.isDigit
+        )
 
 
 {-| Lower case char followed by all lower case, and optionally trailing digits. E.g., "hello" or "hello53"
 -}
 lowerCaseToken : Parser String
 lowerCaseToken =
-    Parser.getChompedString (Parser.succeed ())
-        |. Parser.chompIf Char.isLower
-        |. Parser.chompWhile Char.isLower
-        |. Parser.chompWhile Char.isDigit
+    Parser.getChompedString
+        (Parser.succeed ()
+            |. Parser.chompIf Char.isLower
+            |. Parser.chompWhile Char.isLower
+            |. Parser.chompWhile Char.isDigit
+        )
 
 
 {-| A number made up of only digits.
 -}
 numberToken : Parser String
 numberToken =
-    Parser.getChompedString (Parser.succeed ())
-        |. Parser.chompIf Char.isDigit
-        |. Parser.chompWhile Char.isDigit
+    Parser.getChompedString
+        (Parser.succeed ()
+            |. Parser.chompIf Char.isDigit
+            |. Parser.chompWhile Char.isDigit
+        )

@@ -348,7 +348,7 @@ checkModuleName makeError (ToCase toPascal) node =
         pascalCaseNames =
             List.map toPascal names
     in
-    if List.any identity <| List.map2 (/=) (List.map Case names) pascalCaseNames then
+    if List.any identity (List.map2 (/=) (List.map Case names) pascalCaseNames) then
         [ makeError node pascalCaseNames ]
 
     else

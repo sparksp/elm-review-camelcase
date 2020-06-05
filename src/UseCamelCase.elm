@@ -19,7 +19,7 @@ import Elm.Syntax.Expression as Expression exposing (Expression)
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.Module as Module exposing (Module)
 import Elm.Syntax.ModuleName exposing (ModuleName)
-import Elm.Syntax.Node as Node exposing (Node)
+import Elm.Syntax.Node as Node exposing (Node(..))
 import Elm.Syntax.Pattern as Pattern exposing (Pattern)
 import Elm.Syntax.Signature exposing (Signature)
 import Elm.Syntax.Type as Type
@@ -206,17 +206,15 @@ moduleDefinitionVisitor (Config { toPascal }) node =
 
 
 importVisitor : Config -> Node Import -> List (Error {})
-importVisitor (Config { toPascal }) node =
-    node
-        |> Node.value
-        |> .moduleAlias
+importVisitor (Config { toPascal }) (Node _ { moduleAlias }) =
+    moduleAlias
         |> Maybe.map (checkModuleName importAliasError toPascal)
         |> Maybe.withDefault []
 
 
 declarationVisitor : Config -> Node Declaration -> List (Error {})
-declarationVisitor ((Config { toCamel, toPascal }) as config) node =
-    case Node.value node of
+declarationVisitor ((Config { toCamel, toPascal }) as config) (Node _ declaration) =
+    case declaration of
         Declaration.AliasDeclaration { name, typeAnnotation } ->
             checkString typeError toPascal name
                 ++ checkTypeAnnotation toCamel typeAnnotation
@@ -241,8 +239,8 @@ declarationVisitor ((Config { toCamel, toPascal }) as config) node =
 
 
 expressionVisitor : Config -> Node Expression -> List (Error {})
-expressionVisitor (Config { toCamel }) node =
-    case Node.value node of
+expressionVisitor (Config { toCamel }) (Node _ expression) =
+    case expression of
         Expression.LetExpression { declarations } ->
             fastConcatMap (checkLetDeclaration toCamel) declarations
 
@@ -273,21 +271,21 @@ checkMaybeSignature toCamel maybeNode =
 
 
 checkSignature : ToCase Camel -> Node Signature -> List (Error {})
-checkSignature toCamel node =
-    checkTypeAnnotation toCamel (node |> Node.value |> .typeAnnotation)
+checkSignature toCamel (Node _ { typeAnnotation }) =
+    checkTypeAnnotation toCamel typeAnnotation
 
 
 checkValueConstructor : Config -> Node Type.ValueConstructor -> List (Error {})
-checkValueConstructor (Config { toCamel, toPascal }) node =
-    checkString typeVariantError toPascal (node |> Node.value |> .name)
-        ++ fastConcatMap (checkTypeAnnotation toCamel) (node |> Node.value |> .arguments)
+checkValueConstructor (Config { toCamel, toPascal }) (Node _ { name, arguments }) =
+    checkString typeVariantError toPascal name
+        ++ fastConcatMap (checkTypeAnnotation toCamel) arguments
 
 
 checkTypeAnnotation : ToCase Camel -> Node TypeAnnotation -> List (Error {})
-checkTypeAnnotation toCamel node =
-    case Node.value node of
+checkTypeAnnotation toCamel (Node range typeAnnotation) =
+    case typeAnnotation of
         TypeAnnotation.GenericType name ->
-            checkString genericError toCamel (Node.map (\_ -> name) node)
+            checkString genericError toCamel (Node range name)
 
         TypeAnnotation.Typed _ list ->
             fastConcatMap (checkTypeAnnotation toCamel) list
@@ -301,9 +299,9 @@ checkTypeAnnotation toCamel node =
         TypeAnnotation.Record recordFields ->
             fastConcatMap (checkRecordField toCamel) recordFields
 
-        TypeAnnotation.GenericRecord name recordFields ->
+        TypeAnnotation.GenericRecord name (Node _ recordFields) ->
             checkString genericError toCamel name
-                ++ fastConcatMap (checkRecordField toCamel) (Node.value recordFields)
+                ++ fastConcatMap (checkRecordField toCamel) recordFields
 
         TypeAnnotation.FunctionTypeAnnotation first second ->
             checkTypeAnnotation toCamel first
@@ -311,18 +309,14 @@ checkTypeAnnotation toCamel node =
 
 
 checkRecordField : ToCase Camel -> Node TypeAnnotation.RecordField -> List (Error {})
-checkRecordField toCamel node =
-    let
-        ( name, typeAnnotation ) =
-            Node.value node
-    in
+checkRecordField toCamel (Node _ ( name, typeAnnotation )) =
     checkString recordKeyError toCamel name
         ++ checkTypeAnnotation toCamel typeAnnotation
 
 
 checkLetDeclaration : ToCase Camel -> Node Expression.LetDeclaration -> List (Error {})
-checkLetDeclaration toCamel node =
-    case Node.value node of
+checkLetDeclaration toCamel (Node _ letDeclaration) =
+    case letDeclaration of
         Expression.LetDestructuring pattern _ ->
             checkPattern variableError toCamel pattern
 
@@ -332,8 +326,12 @@ checkLetDeclaration toCamel node =
 
 checkFunction : ToCase Camel -> Expression.Function -> List (Error {})
 checkFunction toCamel { declaration, signature } =
-    checkString functionError toCamel (declaration |> Node.value |> .name)
-        ++ fastConcatMap (checkPattern argumentError toCamel) (declaration |> Node.value |> .arguments)
+    let
+        { name, arguments } =
+            Node.value declaration
+    in
+    checkString functionError toCamel name
+        ++ fastConcatMap (checkPattern argumentError toCamel) arguments
         ++ checkMaybeSignature toCamel signature
 
 
@@ -356,12 +354,12 @@ checkModuleName makeError (ToCase toPascal) node =
 
 
 checkPattern : (Node String -> Case Camel -> Error {}) -> ToCase Camel -> Node Pattern -> List (Error {})
-checkPattern makeError toCamel node =
+checkPattern makeError toCamel (Node range pattern) =
     let
         checkSubPattern =
             checkPattern makeError toCamel
     in
-    case Node.value node of
+    case pattern of
         Pattern.AllPattern ->
             []
 
@@ -396,7 +394,7 @@ checkPattern makeError toCamel node =
             fastConcatMap checkSubPattern list
 
         Pattern.VarPattern name ->
-            Node.map (\_ -> name) node
+            Node range name
                 |> checkVar makeError toCamel
 
         Pattern.AsPattern subPattern asName ->
@@ -447,8 +445,8 @@ checkVar makeError (ToCase toCamel) node =
 
 
 moduleNameNode : Node Module -> Node ModuleName
-moduleNameNode node =
-    case Node.value node of
+moduleNameNode (Node _ mod) =
+    case mod of
         Module.NormalModule data ->
             data.moduleName
 
@@ -499,15 +497,15 @@ variableError =
 
 
 camelStringError : { thing : String, things : String } -> Node String -> Case Camel -> Error {}
-camelStringError { thing, things } name (Case camelCase) =
+camelStringError { thing, things } (Node range name) (Case camelCase) =
     Rule.error
-        { message = String.concat [ "Wrong case style for `", Node.value name, "` ", thing, "." ]
+        { message = String.concat [ "Wrong case style for `", name, "` ", thing, "." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All ", things, " must be named using the camelCase style.  For this ", thing, " that would be `", camelCase, "`." ]
             ]
         }
-        (Node.range name)
+        range
 
 
 
@@ -549,15 +547,15 @@ pascalListError terms node cases =
 
 
 pascalStringError : { thing : String, things : String } -> Node String -> Case Pascal -> Error {}
-pascalStringError { thing, things } name (Case pascalCase) =
+pascalStringError { thing, things } (Node range name) (Case pascalCase) =
     Rule.error
-        { message = String.concat [ "Wrong case style for `", Node.value name, "` ", thing, "." ]
+        { message = String.concat [ "Wrong case style for `", name, "` ", thing, "." ]
         , details =
             [ "It's important to maintain consistent code style to reduce the effort needed to read and understand your code."
             , String.concat [ "All ", things, " must be named using the PascalCase style.  For this ", thing, " that would be `", pascalCase, "`." ]
             ]
         }
-        (Node.range name)
+        range
 
 
 foldCaseList : (List String -> String) -> List (Case c) -> Case c

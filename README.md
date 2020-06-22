@@ -9,7 +9,7 @@ Provides an [`elm-review`](https://package.elm-lang.org/packages/jfmengels/elm-r
 
 ## Provided rule
 
-- [`UseCamelCase`](https://package.elm-lang.org/packages/sparksp/elm-review-camelcase/1.0.3/UseCamelCase) - Reports code written in the wrong case style.
+- [`UseCamelCase`](https://package.elm-lang.org/packages/sparksp/elm-review-camelcase/1.1.0/UseCamelCase) - Reports code written in the wrong case style.
 
 ## Example configuration
 
@@ -26,4 +26,4 @@ config =
     ]
 ```
 
-Detailed [configuration documentation](https://package.elm-lang.org/packages/sparksp/elm-review-camelcase/1.0.3/UseCamelCase#configuration) is provided with the rule.
+Detailed [configuration documentation](https://package.elm-lang.org/packages/sparksp/elm-review-camelcase/1.1.0/UseCamelCase#configuration) is provided with the rule.

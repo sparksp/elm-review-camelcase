@@ -3,7 +3,7 @@
     "name": "sparksp/elm-review-camelcase",
     "summary": "elm-review rule to ensure your code uses camelCase.",
     "license": "MIT",
-    "version": "1.0.3",
+    "version": "1.1.0",
     "exposed-modules": [
         "UseCamelCase"
     ],

@@ -1,6 +1,6 @@
 module UseCamelCase exposing
     ( rule
-    , default, withCamel, withPascal
+    , Config, default, withCamel, withPascal
     )
 
 {-|
@@ -10,7 +10,7 @@ module UseCamelCase exposing
 
 ## Configuration
 
-@docs default, withCamel, withPascal
+@docs Config, default, withCamel, withPascal
 
 -}
 
@@ -153,15 +153,17 @@ withPascal toPascal (Config config) =
     Config { config | toPascal = ToCase (Case << toPascal) }
 
 
-
---- IMPLEMENTATION
-
-
+{-| Configuration for the UseCamelCase rule.
+-}
 type Config
     = Config
         { toCamel : ToCase Camel
         , toPascal : ToCase Pascal
         }
+
+
+
+--- IMPLEMENTATION
 
 
 type ToCase c

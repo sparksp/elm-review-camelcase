@@ -1,6 +1,6 @@
 module UseCamelCase exposing
     ( rule
-    , default, withCamel, withPascal
+    , Config, default, withCamel, withPascal
     )
 
 {-|
@@ -10,7 +10,7 @@ module UseCamelCase exposing
 
 ## Configuration
 
-@docs default, withCamel, withPascal
+@docs Config, default, withCamel, withPascal
 
 -}
 
@@ -25,7 +25,7 @@ import Elm.Syntax.Signature exposing (Signature)
 import Elm.Syntax.Type as Type
 import Elm.Syntax.TypeAnnotation as TypeAnnotation exposing (TypeAnnotation)
 import ReCase
-import Review.Rule as Rule exposing (Error, Rule)
+import Review.Rule as Rule exposing (Rule)
 
 
 {-| Report any variables, constants, and other declarations that are using the wrong case style.
@@ -153,15 +153,17 @@ withPascal toPascal (Config config) =
     Config { config | toPascal = ToCase (Case << toPascal) }
 
 
-
---- IMPLEMENTATION
-
-
+{-| Configuration for the UseCamelCase rule.
+-}
 type Config
     = Config
         { toCamel : ToCase Camel
         , toPascal : ToCase Pascal
         }
+
+
+
+--- IMPLEMENTATION
 
 
 type ToCase c
@@ -200,19 +202,19 @@ defaultToPascal string =
 --- VISITORS
 
 
-moduleDefinitionVisitor : Config -> Node Module -> List (Error {})
+moduleDefinitionVisitor : Config -> Node Module -> List (Rule.Error {})
 moduleDefinitionVisitor (Config { toPascal }) node =
     checkModuleName moduleError toPascal (moduleNameNode node)
 
 
-importVisitor : Config -> Node Import -> List (Error {})
+importVisitor : Config -> Node Import -> List (Rule.Error {})
 importVisitor (Config { toPascal }) (Node _ { moduleAlias }) =
     moduleAlias
         |> Maybe.map (checkModuleName importAliasError toPascal)
         |> Maybe.withDefault []
 
 
-declarationVisitor : Config -> Node Declaration -> List (Error {})
+declarationVisitor : Config -> Node Declaration -> List (Rule.Error {})
 declarationVisitor ((Config { toCamel, toPascal }) as config) (Node _ declaration) =
     case declaration of
         Declaration.AliasDeclaration { name, typeAnnotation } ->
@@ -238,7 +240,7 @@ declarationVisitor ((Config { toCamel, toPascal }) as config) (Node _ declaratio
             []
 
 
-expressionVisitor : Config -> Node Expression -> List (Error {})
+expressionVisitor : Config -> Node Expression -> List (Rule.Error {})
 expressionVisitor (Config { toCamel }) (Node _ expression) =
     case expression of
         Expression.LetExpression { declarations } ->
@@ -258,30 +260,30 @@ expressionVisitor (Config { toCamel }) (Node _ expression) =
 --- NODE HELPERS
 
 
-checkCase : ToCase Camel -> Expression.Case -> List (Error {})
+checkCase : ToCase Camel -> Expression.Case -> List (Rule.Error {})
 checkCase toCamel =
     checkPattern variableError toCamel << Tuple.first
 
 
-checkMaybeSignature : ToCase Camel -> Maybe (Node Signature) -> List (Error {})
+checkMaybeSignature : ToCase Camel -> Maybe (Node Signature) -> List (Rule.Error {})
 checkMaybeSignature toCamel maybeNode =
     maybeNode
         |> Maybe.map (checkSignature toCamel)
         |> Maybe.withDefault []
 
 
-checkSignature : ToCase Camel -> Node Signature -> List (Error {})
+checkSignature : ToCase Camel -> Node Signature -> List (Rule.Error {})
 checkSignature toCamel (Node _ { typeAnnotation }) =
     checkTypeAnnotation toCamel typeAnnotation
 
 
-checkValueConstructor : Config -> Node Type.ValueConstructor -> List (Error {})
+checkValueConstructor : Config -> Node Type.ValueConstructor -> List (Rule.Error {})
 checkValueConstructor (Config { toCamel, toPascal }) (Node _ { name, arguments }) =
     checkString typeVariantError toPascal name
         ++ fastConcatMap (checkTypeAnnotation toCamel) arguments
 
 
-checkTypeAnnotation : ToCase Camel -> Node TypeAnnotation -> List (Error {})
+checkTypeAnnotation : ToCase Camel -> Node TypeAnnotation -> List (Rule.Error {})
 checkTypeAnnotation toCamel (Node range typeAnnotation) =
     case typeAnnotation of
         TypeAnnotation.GenericType name ->
@@ -308,13 +310,13 @@ checkTypeAnnotation toCamel (Node range typeAnnotation) =
                 ++ checkTypeAnnotation toCamel second
 
 
-checkRecordField : ToCase Camel -> Node TypeAnnotation.RecordField -> List (Error {})
+checkRecordField : ToCase Camel -> Node TypeAnnotation.RecordField -> List (Rule.Error {})
 checkRecordField toCamel (Node _ ( name, typeAnnotation )) =
     checkString recordKeyError toCamel name
         ++ checkTypeAnnotation toCamel typeAnnotation
 
 
-checkLetDeclaration : ToCase Camel -> Node Expression.LetDeclaration -> List (Error {})
+checkLetDeclaration : ToCase Camel -> Node Expression.LetDeclaration -> List (Rule.Error {})
 checkLetDeclaration toCamel (Node _ letDeclaration) =
     case letDeclaration of
         Expression.LetDestructuring pattern _ ->
@@ -324,7 +326,7 @@ checkLetDeclaration toCamel (Node _ letDeclaration) =
             checkFunction toCamel function
 
 
-checkFunction : ToCase Camel -> Expression.Function -> List (Error {})
+checkFunction : ToCase Camel -> Expression.Function -> List (Rule.Error {})
 checkFunction toCamel { declaration, signature } =
     let
         { name, arguments } =
@@ -335,7 +337,7 @@ checkFunction toCamel { declaration, signature } =
         ++ checkMaybeSignature toCamel signature
 
 
-checkModuleName : (Node ModuleName -> List (Case Pascal) -> Error {}) -> ToCase Pascal -> Node ModuleName -> List (Error {})
+checkModuleName : (Node ModuleName -> List (Case Pascal) -> Rule.Error {}) -> ToCase Pascal -> Node ModuleName -> List (Rule.Error {})
 checkModuleName makeError (ToCase toPascal) node =
     let
         names : List String
@@ -353,7 +355,7 @@ checkModuleName makeError (ToCase toPascal) node =
         []
 
 
-checkPattern : (Node String -> Case Camel -> Error {}) -> ToCase Camel -> Node Pattern -> List (Error {})
+checkPattern : (Node String -> Case Camel -> Rule.Error {}) -> ToCase Camel -> Node Pattern -> List (Rule.Error {})
 checkPattern makeError toCamel (Node range pattern) =
     let
         checkSubPattern =
@@ -408,7 +410,7 @@ checkPattern makeError toCamel (Node range pattern) =
             checkSubPattern subPattern
 
 
-checkString : (Node String -> Case c -> Error {}) -> ToCase c -> Node String -> List (Error {})
+checkString : (Node String -> Case c -> Rule.Error {}) -> ToCase c -> Node String -> List (Rule.Error {})
 checkString makeError (ToCase toCase) node =
     let
         name : String
@@ -426,7 +428,7 @@ checkString makeError (ToCase toCase) node =
         []
 
 
-checkVar : (Node String -> Case Camel -> Error {}) -> ToCase Camel -> Node String -> List (Error {})
+checkVar : (Node String -> Case Camel -> Rule.Error {}) -> ToCase Camel -> Node String -> List (Rule.Error {})
 checkVar makeError (ToCase toCamel) node =
     let
         name : String
@@ -461,42 +463,42 @@ moduleNameNode (Node _ mod) =
 --- CAMEL ERRORS
 
 
-aliasError : Node String -> Case Camel -> Error {}
+aliasError : Node String -> Case Camel -> Rule.Error {}
 aliasError =
     camelStringError { thing = "alias", things = "aliases" }
 
 
-argumentError : Node String -> Case Camel -> Error {}
+argumentError : Node String -> Case Camel -> Rule.Error {}
 argumentError =
     camelStringError { thing = "argument", things = "arguments" }
 
 
-functionError : Node String -> Case Camel -> Error {}
+functionError : Node String -> Case Camel -> Rule.Error {}
 functionError =
     camelStringError { thing = "function", things = "functions" }
 
 
-genericError : Node String -> Case Camel -> Error {}
+genericError : Node String -> Case Camel -> Rule.Error {}
 genericError =
     camelStringError { thing = "generic", things = "generics" }
 
 
-portError : Node String -> Case Camel -> Error {}
+portError : Node String -> Case Camel -> Rule.Error {}
 portError =
     camelStringError { thing = "port", things = "ports" }
 
 
-recordKeyError : Node String -> Case Camel -> Error {}
+recordKeyError : Node String -> Case Camel -> Rule.Error {}
 recordKeyError =
     camelStringError { thing = "key", things = "keys" }
 
 
-variableError : Node String -> Case Camel -> Error {}
+variableError : Node String -> Case Camel -> Rule.Error {}
 variableError =
     camelStringError { thing = "variable", things = "variables" }
 
 
-camelStringError : { thing : String, things : String } -> Node String -> Case Camel -> Error {}
+camelStringError : { thing : String, things : String } -> Node String -> Case Camel -> Rule.Error {}
 camelStringError { thing, things } (Node range name) (Case camelCase) =
     Rule.error
         { message = String.concat [ "Wrong case style for `", name, "` ", thing, "." ]
@@ -512,27 +514,27 @@ camelStringError { thing, things } (Node range name) (Case camelCase) =
 --- PASCAL ERRORS
 
 
-importAliasError : Node ModuleName -> List (Case Pascal) -> Error {}
+importAliasError : Node ModuleName -> List (Case Pascal) -> Rule.Error {}
 importAliasError =
     pascalListError { thing = "import", things = "modules" }
 
 
-moduleError : Node ModuleName -> List (Case Pascal) -> Error {}
+moduleError : Node ModuleName -> List (Case Pascal) -> Rule.Error {}
 moduleError =
     pascalListError { thing = "module", things = "modules" }
 
 
-typeError : Node String -> Case Pascal -> Error {}
+typeError : Node String -> Case Pascal -> Rule.Error {}
 typeError =
     pascalStringError { thing = "type", things = "types" }
 
 
-typeVariantError : Node String -> Case Pascal -> Error {}
+typeVariantError : Node String -> Case Pascal -> Rule.Error {}
 typeVariantError =
     pascalStringError { thing = "variant", things = "variants" }
 
 
-pascalListError : { thing : String, things : String } -> Node (List String) -> List (Case Pascal) -> Error {}
+pascalListError : { thing : String, things : String } -> Node (List String) -> List (Case Pascal) -> Rule.Error {}
 pascalListError terms node cases =
     let
         stringNode : Node String
@@ -546,7 +548,7 @@ pascalListError terms node cases =
     pascalStringError terms stringNode caseString
 
 
-pascalStringError : { thing : String, things : String } -> Node String -> Case Pascal -> Error {}
+pascalStringError : { thing : String, things : String } -> Node String -> Case Pascal -> Rule.Error {}
 pascalStringError { thing, things } (Node range name) (Case pascalCase) =
     Rule.error
         { message = String.concat [ "Wrong case style for `", name, "` ", thing, "." ]

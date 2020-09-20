@@ -1,4 +1,4 @@
-module UseCamelCaseTests exposing (all)
+module Tests.UseCamelCase exposing (all)
 
 import Review.Test
 import Test exposing (Test, describe, test)

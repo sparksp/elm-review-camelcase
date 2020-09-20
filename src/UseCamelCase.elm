@@ -358,6 +358,7 @@ checkModuleName makeError (ToCase toPascal) node =
 checkPattern : (Node String -> Case Camel -> Rule.Error {}) -> ToCase Camel -> Node Pattern -> List (Rule.Error {})
 checkPattern makeError toCamel (Node range pattern) =
     let
+        checkSubPattern : Node Pattern -> List (Rule.Error {})
         checkSubPattern =
             checkPattern makeError toCamel
     in

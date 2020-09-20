@@ -1,4 +1,4 @@
-module ReCaseTests exposing (all)
+module Tests.ReCase exposing (all)
 
 import Expect
 import ReCase exposing (toCamel, toPascal)

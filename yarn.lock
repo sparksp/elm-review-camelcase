@@ -584,13 +584,6 @@ elm-doc-preview@^5.0.5:
     tmp "0.1.0"
     ws "^7.2.3"
 
-elm-format@^0.8.4:
-  version "0.8.4"
-  resolved "https://registry.yarnpkg.com/elm-format/-/elm-format-0.8.4.tgz#8243b6d9eba66708232247e079190a3cdf339dcf"
-  integrity sha512-0KurHC4MBUljdA2Sr+yzcoyAVqCku0LuNpvq5B3UIAlCPZ9PnOW2tUhVnQOCvp9RXngwbnsf18dE48tQ+s8r7g==
-  dependencies:
-    binwrap "^0.2.2"
-
 elm-json@~0.2.7:
   version "0.2.8"
   resolved "https://registry.yarnpkg.com/elm-json/-/elm-json-0.2.8.tgz#20ec42039b62c624d1369cda6318e160ad553094"
@@ -640,12 +633,10 @@ elm-test@^0.19.1-revision4:
     which "^2.0.2"
     xmlbuilder "^15.1.0"
 
-elm@^0.19.1-3:
-  version "0.19.1-3"
-  resolved "https://registry.yarnpkg.com/elm/-/elm-0.19.1-3.tgz#2382aa1943bc79974b5d95b0a6acbe010ee16909"
-  integrity sha512-6y36ewCcVmTOx8lj7cKJs3bhI5qMfoVEigePZ9PhEUNKpwjjML/pU2u2YSpHVAznuCcojoF6KIsrS1Ci7GtVaQ==
-  dependencies:
-    request "^2.88.0"
+elm-tooling@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.3.0.tgz#9969d5778ae458007b32124b2ab6040ca11aa3a0"
+  integrity sha512-OLRg8D7QCbzMmi8QTaebIIsH2qaIj4NiltuJ8vZj4JFHOIVa3utyD5tlfySBGZNfDG7+vZ2K8iDk82TalFaAbw==
 
 elmi-to-json@^1.3.0:
   version "1.3.0"

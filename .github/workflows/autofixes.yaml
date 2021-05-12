@@ -8,48 +8,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v2.3.4
 
       - name: Extract branch name
         shell: bash
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
 
-      - name: Get yarn cache directory
-        id: yarn-cache-dir
-        run: echo "::set-output name=path::$(yarn cache dir)"
-
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2.1.5
         id: yarn-cache
         with:
-          path: ${{ steps.yarn-cache-dir.outputs.path }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-node_modules
 
-      - uses: actions/cache@v1
-        id: elm-cache
+      - uses: actions/cache@v2.1.5
         with:
           path: ~/.elm
           key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
 
       - name: Install dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        env:
+          NO_ELM_TOOLING_INSTALL: 1
         run: yarn install --frozen-lockfile
 
-      - name: Add yarn bin to path
-        run: yarn bin >> $GITHUB_PATH
+      - name: Install elm tooling
+        run: npx --no-install elm-tooling install
 
       - name: Run elm-format
-        run: elm-format --yes
+        run: npx --no-install elm-format --yes
 
       - name: Apply elm-review fixes
         id: elm-review
-        run: yes | elm-review --fix-all
+        run: npx --no-install elm-review --fix-all-without-prompt
         continue-on-error: true
 
-      - uses: peter-evans/create-pull-request@v3
+      - uses: peter-evans/create-pull-request@v3.9.1
         with:
           commit-message: 'Apply elm-review fixes'
           branch: fixes/${{ steps.extract_branch.outputs.branch }}
@@ -62,95 +57,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v2.3.4
 
       - name: Extract branch name
         shell: bash
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
 
-      - name: Get yarn cache directory
-        id: yarn-cache-dir
-        run: echo "::set-output name=path::$(yarn cache dir)"
-
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2.1.5
         id: yarn-cache
         with:
-          path: ${{ steps.yarn-cache-dir.outputs.path }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-node_modules
 
-      - uses: actions/cache@v1
-        id: elm-cache
+      - uses: actions/cache@v2.1.5
         with:
           path: ~/.elm
           key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
 
       - name: Install dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        env:
+          NO_ELM_TOOLING_INSTALL: 1
         run: yarn install --frozen-lockfile
 
-      - name: Add yarn bin to path
-        run: yarn bin >> $GITHUB_PATH
+      - name: Install elm tooling
+        run: npx --no-install elm-tooling install
 
       - name: Build elm docs
-        run: elm make --docs docs.json
+        run: npx --no-install elm make --docs docs.json
 
-      - uses: peter-evans/create-pull-request@v3
+      - uses: peter-evans/create-pull-request@v3.9.1
         with:
           commit-message: 'Update docs.json'
           branch: docs/${{ steps.extract_branch.outputs.branch }}
           title: "Update docs.json"
           body: "*This is an automated pull request because we found that the docs were out of date.*"
-          reviewers: sparksp
-          assignees: sparksp
-
-  examples:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: extract_branch
-
-      - name: Get yarn cache directory
-        id: yarn-cache-dir
-        run: echo "::set-output name=path::$(yarn cache dir)"
-
-      - uses: actions/cache@v1
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir.outputs.path }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - uses: actions/cache@v1
-        id: elm-cache
-        with:
-          path: ~/.elm
-          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Add yarn bin to path
-        run: yarn bin >> $GITHUB_PATH
-
-      - name: Check that examples are up to date
-        run: node elm-review-package-tests/check-examples-were-updated.js
-        continue-on-error: true
-
-      - uses: peter-evans/create-pull-request@v3
-        with:
-          commit-message: 'Update examples'
-          branch: examples/${{ steps.extract_branch.outputs.branch }}
-          title: "Update examples"
-          body: "*This is an automated pull request because we found that the examples were out of date.*"
           reviewers: sparksp
           assignees: sparksp

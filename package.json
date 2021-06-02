@@ -3,7 +3,7 @@
     "postinstall": "elm-tooling install",
     "docs": "elm make --docs=docs.json",
     "docs:preview": "elm-doc-preview",
-    "lint:format": "elm-format --yes src tests preview/src",
+    "lint:format": "elm-format --yes src tests review/src preview/src",
     "lint:review": "elm-review",
     "lint": "run-s lint:* ;",
     "test:elm": "elm-test",

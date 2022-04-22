@@ -125,7 +125,7 @@ collectTitleCaseWords words maybeString =
             Parser.Loop (toTitleCase string :: words)
 
         Nothing ->
-            Parser.Done (words |> List.reverse |> String.join "")
+            Parser.Done (words |> List.reverse |> String.concat)
 
 
 {-| A word either Title or lower.

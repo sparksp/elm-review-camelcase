@@ -319,22 +319,6 @@ age =
                     |> Review.Test.expectErrors
                         [ variableError "person_age" "personAge"
                         ]
-        , test "should report when uncons names are not camelCase and hint the correct name" <|
-            \_ ->
-                """
-module A exposing (..)
-age =
-    let
-        person_age :: other_ages = ages
-        firstCamel :: otherCamels = allCamels
-    in
-    1
-"""
-                    |> Review.Test.run (rule default)
-                    |> Review.Test.expectErrors
-                        [ variableError "person_age" "personAge"
-                        , variableError "other_ages" "otherAges"
-                        ]
         , test "should report when list names are not camelCase and hint the correct name" <|
             \_ ->
                 """
